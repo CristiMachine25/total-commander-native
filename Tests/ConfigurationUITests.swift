@@ -5,6 +5,8 @@ import AppKit
 final class CommanderController:NSObject {
     var runtimeConfig=CommanderConfiguration()
     var showHidden=false
+    func saveDirectoryHistoryNow(){}
+    func clearDirectoryHistoryNow(){}
     let remember=false
     var applied=0,refreshed=0
     func applyConfiguration(_ value:CommanderConfiguration){runtimeConfig=value;showHidden=value.showHidden;applied += 1}
@@ -49,9 +51,20 @@ final class CommanderController:NSObject {
         navigation.selectRowIndexes(IndexSet(integer:1),byExtendingSelection:false)
         let hidden=descendants(window.contentView!).compactMap{$0 as? NSButton}.first{$0.title=="Show hidden files"}!
         hidden.state = .on
+        let brackets=descendants(window.contentView!).compactMap{$0 as? NSButton}.first{$0.title=="Show square brackets around directories"}!
+        brackets.state = .off
+        navigation.selectRowIndexes(IndexSet(integer:17),byExtendingSelection:false)
+        let history=descendants(window.contentView!).compactMap{$0 as? NSButton}.first{$0.title=="Save directory history on exit"}!
+        history.state = .on
+        navigation.selectRowIndexes(IndexSet(integer:24),byExtendingSelection:false)
+        let bindingEditor=descendants(window.contentView!).compactMap{$0 as? KeybindingsEditor}.first!
+        bindingEditor.aliasField.stringValue="full=cm_SrcLong"
+        try check(descendants(bindingEditor).compactMap{$0 as? NSButton}.contains{$0.title=="Record shortcut"},"Simplified editor embedded in real Preferences")
+        navigation.selectRowIndexes(IndexSet(integer:1),byExtendingSelection:false)
         let apply=descendants(window.contentView!).compactMap{$0 as? NSButton}.first{$0.title=="Apply"}!
         let persistedBefore=UserDefaults.standard.data(forKey:CommanderConfiguration.defaultsKey)
         apply.performClick(nil)
+        try check(!commander.runtimeConfig.directoryBrackets && commander.runtimeConfig.historySaveOnExit && commander.runtimeConfig.commandAliases=="full=cm_SrcLong","New display/history controls and Advanced aliases survive category switching and Apply")
         try check(commander.refreshed==0,"Applying settings does not start an unconditional second directory scan")
         try check(commander.runtimeConfig.copyVerifyAfterCopy && commander.runtimeConfig.copyDefaultCollision=="rename" && commander.runtimeConfig.zipCompressionLevel==0 && commander.runtimeConfig.autoRefreshEnabled,"Edited copy, ZIP and refresh controls survive page switching and Apply")
         try check(commander.applied==1 && commander.runtimeConfig.showHidden && commander.runtimeConfig.sizeFormat == .megabytes,"Apply invokes actual runtime configuration update")

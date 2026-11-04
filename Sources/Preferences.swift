@@ -15,7 +15,7 @@ private struct ConfigurationPage {
         .init(title:"Custom Columns",missing:"Windows content-plugin fields, per-filesystem-plugin column sets, and original dialog-unit sizing."),
         .init(title:"View Modes",missing:"Windows tab-icon files and plugin-dependent commands."),
         .init(title:"Auto Switch Mode",missing:"Windows drive-type detection and filesystem-plugin conditions."),
-        .init(title:"Folder Tabs",missing:"Locked tabs allowing directory changes, remote tab locks, multiline tabs and per-tab display filters."),
+        .init(title:"Folder Tabs",missing:"Locked tabs allowing directory changes, remote tab locks, multiline tabs and remaining tab-order policies."),
         .init(title:"Thumbnails",missing:"Windows OLE/Lister-plugin providers, EXIF custom fields and a persistent thumbnail database."),
         .init(title:"Operation",missing:"Tray behavior, mouse-selection compatibility modes and file-comment formats."),
         .init(title:"Edit/View",missing:"Per-extension external viewer associations, Windows command-line placeholders, Lister plugins/encoding presets, fixed-column wrap length and automatic FTP re-upload without confirmation."),
@@ -132,7 +132,14 @@ final class PreferencesController:NSWindowController,NSWindowDelegate,NSTableVie
         switch descriptor.title {
         case "Layout":
             checkbox("Show button bar",\.showButtonBar);checkbox("Show drive combobox",\.showDriveList);checkbox("Show folder tabs",\.showFolderTabs);checkbox("Show current directory",\.showCurrentDirectory);checkbox("Show tabstop header",\.showColumnHeaders);checkbox("Show status bar",\.showStatusBar);checkbox("Show command line",\.showCommandLine);checkbox("Show function key buttons",\.showFunctionButtons);checkbox("Vertical arrangement (panels above/below)",\.verticalArrangement)
-        case "Display":checkbox("Show hidden files",\.showHidden);checkbox("Directories before files",\.directoriesFirst);checkbox("Case-sensitive name sorting",\.caseSensitiveSort)
+        case "Display":
+            checkbox("Show hidden files",\.showHidden)
+            checkbox("Show square brackets around directories",\.directoryBrackets)
+            checkbox("Append / to directory names (macOS)",\.directoryTrailingSlash)
+            checkbox("Directories before files",\.directoriesFirst)
+            checkbox("Sort grouped directories by name",\.directoriesAlwaysByName)
+            choice("Sorting method",\.sortMethod,[("Natural alphabetical",.naturalAlphabetical),("Alphabetical",.alphabetical),("Character code",.characterCode),("Natural character code",.naturalCharacterCode)])
+            checkbox("Case-sensitive name sorting (native override)",\.caseSensitiveSort)
         case "Icons":choice("Show icons to the left of the filename",\.iconMode,[("All associated (macOS)",.system),("Only standard icons",.standard),("No icons",.none)]);integer("Icon size",\.iconSize,12...48)
         case "Font":text("File list font",\.fileFontName);number("Font size",\.fileFontSize,9...36);checkbox("Bold",\.fileFontBold);number("File row height",\.rowHeight,16...64)
         case "Color":
@@ -140,6 +147,8 @@ final class PreferencesController:NSWindowController,NSWindowDelegate,NSTableVie
             color("Dark font color",\.darkPalette.foreground);color("Dark background",\.darkPalette.background);color("Dark mark color",\.darkPalette.markedForeground);color("Dark cursor color",\.darkPalette.selectionBackground);color("Dark cursor font",\.darkPalette.selectionForeground);color("Dark alternate background",\.darkPalette.alternatingBackground)
             color("Font color",\.foreground);color("Background",\.background);color("Mark color",\.markedForeground);color("Cursor color",\.selectionBackground);color("Cursor font",\.selectionForeground);checkbox("Use alternating row backgrounds",\.alternatingRowBackground);color("Alternate row background",\.alternatingBackground)
         case "Tabstops":
+            checkbox("Show directory count in footer",\.showDirectoryCount)
+            integer("Brief column width limit (0 = automatic)",\.briefColumnWidthLimit,0...1200)
             choice("Show file extensions",\.extensionStyle,[("Aligned (with TAB)",.aligned),("Directly after filename",.afterName)])
             for (key,title) in [("name","Name"),("ext","Extension"),("size","Size"),("date","Date/time"),("attr","Attributes")]{
                 let width=NSTextField(string:String(Int(draft.columnWidths[key] ?? 80)));row(title+" column width",width)
@@ -188,10 +197,9 @@ final class PreferencesController:NSWindowController,NSWindowDelegate,NSTableVie
             checkbox("Confirm replacement of existing local files",\.confirmOverwrite)
             checkbox("Confirm moving local files to Trash",\.confirmDelete)
         case "Keybindings":
-            let editor=KeybindingsEditor(shortcuts:draft.customShortcuts)
+            let editor=KeybindingsEditor(shortcuts:draft.customShortcuts,aliases:draft.commandAliases)
             page.addArrangedSubview(editor)
-            readers.append{[weak self,weak editor] in guard let self,let editor else{return};self.draft.customShortcuts=try editor.serializedBindings()}
-            text("Command aliases (full=cm_SrcLong)",\.commandAliases)
+            readers.append{[weak self,weak editor] in guard let self,let editor else{return};self.draft.customShortcuts=try editor.serializedBindings();self.draft.commandAliases=editor.aliasField.stringValue.trimmingCharacters(in:.whitespacesAndNewlines)}
         case "Copy/Delete":
             choice("Existing local destination",\.copyDefaultCollision,[("Ask", "ask"),("Skip existing", "skip"),("Replace existing", "replace"),("Keep both (rename)", "rename")])
             checkbox("Preserve file timestamps",\.copyPreserveFileDates)
@@ -220,7 +228,13 @@ final class PreferencesController:NSWindowController,NSWindowDelegate,NSTableVie
             checkbox("Verify ZIP after packing",\.zipVerifyAfterPacking)
         case "Quick Search":choice("Quick search in current directory",\.quickSearchMode,[("Disabled",.disabled),("Letter only",.letters),("ALT + Letters",.alt),("CTRL + ALT + Letters",.ctrlAlt)]);checkbox("Beginning: name must start with typed characters",\.quickSearchMatchBeginning);checkbox("Ending: exact name before typed dot",\.quickSearchMatchEnding)
         case "Ignore List":checkbox("Enable ignore list — display filtering only",\.ignoreListEnabled);text("Name patterns (separated by ;)",\.ignorePatterns)
-        case "History":integer("Maximum directory history items",\.historyLimit,1...200)
+        case "History":
+            integer("Maximum directory history items",\.historyLimit,1...200)
+            integer("Maximum history entries shown",\.historyMaximumShown,1...200)
+            checkbox("Save directory history on exit",\.historySaveOnExit)
+            checkbox("Show icons in directory history",\.historyShowIcons)
+            let actions=NSStackView(views:[NSButton(title:"Save history now",target:self,action:#selector(saveHistoryNow)),NSButton(title:"Delete saved history",target:self,action:#selector(deleteHistoryNow))]);actions.spacing=8;page.addArrangedSubview(actions)
+            page.addArrangedSubview(NSTextField(wrappingLabelWithString:"Save and Delete act immediately on saved local directory history using your applied settings. Current navigation history is kept."))
         default:let text=NSTextField(wrappingLabelWithString:"The original category is listed here for reference. Its settings are not implemented yet; there are no inactive controls that appear to save working options.");page.addArrangedSubview(text);text.widthAnchor.constraint(equalTo:page.widthAnchor,constant:-24).isActive=true
         }
         scroller.contentView.scroll(to:.zero);scroller.reflectScrolledClipView(scroller.contentView)
@@ -254,6 +268,8 @@ final class PreferencesController:NSWindowController,NSWindowDelegate,NSTableVie
             guard NSFont(name:draft.viewerFontName,size:draft.viewerFontSize) != nil else{throw failure("The internal viewer font is not installed.")}
             if commander.remember {try draft.save()};commander.applyConfiguration(draft);baseline=commander.runtimeConfig
     }
+    @objc private func saveHistoryNow(){commander?.saveDirectoryHistoryNow()}
+    @objc private func deleteHistoryNow(){commander?.clearDirectoryHistoryNow()}
     private func save()->Bool {
         do {try applyDraft();return true}catch{show(error);return false}
     }

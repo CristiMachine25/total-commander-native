@@ -2,6 +2,8 @@ import AppKit
 
 final class CommanderController:NSObject {
     var runtimeConfig=CommanderConfiguration(),showHidden=false
+    func saveDirectoryHistoryNow(){}
+    func clearDirectoryHistoryNow(){}
     let remember=false
     var applied=0
     func applyConfiguration(_ value:CommanderConfiguration){runtimeConfig=value;showHidden=value.showHidden;applied += 1}
