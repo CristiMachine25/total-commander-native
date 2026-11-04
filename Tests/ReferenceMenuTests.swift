@@ -56,6 +56,16 @@ import Foundation
         try rejects("Conflicting alias rejected"){_=try ReferenceMenuCatalog(menuText:"",commandsText:"cm_alias=7\nCM_ALIAS=8")}
         let bundled=try ReferenceMenuCatalog.load(bundle:Bundle(path:resources.deletingLastPathComponent().path) ?? .main)
         _=bundled // Absence is a supported fallback for source/test runs.
+        let fixture=FileManager.default.temporaryDirectory.appendingPathComponent("MenuCache-"+UUID().uuidString+".bundle")
+        try FileManager.default.createDirectory(at:fixture,withIntermediateDirectories:true)
+        defer {try? FileManager.default.removeItem(at:fixture)}
+        try menu.write(to:fixture.appendingPathComponent("WCMD_ENG.MNU"),atomically:true,encoding:.windowsCP1252)
+        try inc.write(to:fixture.appendingPathComponent("TOTALCMD.INC"),atomically:true,encoding:.windowsCP1252)
+        let bundle=Bundle(path:fixture.path)!
+        let loaded=try ReferenceMenuCatalog.load(bundle:bundle)!
+        try check(loaded.roots==catalog.roots,"Cached loader preserves original resource structure")
+        try FileManager.default.removeItem(at:fixture.appendingPathComponent("TOTALCMD.INC"))
+        try check(try ReferenceMenuCatalog.load(bundle:bundle)?.roots==loaded.roots,"Repeated menus use cached bundle resources without reparsing")
         print("PASS: \(count) reference menu assertions; \(all.count) original items, \(ReferenceCommandRouting.supportedIDs.count) supported command IDs")
     }
 }

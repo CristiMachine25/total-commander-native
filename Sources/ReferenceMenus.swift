@@ -110,9 +110,17 @@ struct ReferenceMenuCatalog {
         return nil
     }
     var topLevelTitles:[String] {roots.compactMap{if case .popup(let label,_)=$0{return label.title};if case .startMenu=$0{return "Start"};return nil}}
+    private static let cacheLock=NSLock()
+    private static var bundleCache:[String:ReferenceMenuCatalog]=[:]
     static func load(bundle:Bundle = .main)throws->ReferenceMenuCatalog? {
         guard let menu=bundle.url(forResource:"WCMD_ENG",withExtension:"MNU"),let commands=bundle.url(forResource:"TOTALCMD",withExtension:"INC") else{return nil}
-        return try ReferenceMenuCatalog(menuText:String(contentsOf:menu,encoding:.windowsCP1252),commandsText:String(contentsOf:commands,encoding:.windowsCP1252))
+        // Shipped bundle resources are immutable for the lifetime of this process.
+        let key=menu.path+"|"+commands.path
+        cacheLock.lock();let existing=bundleCache[key];cacheLock.unlock()
+        if let existing{return existing}
+        let catalog=try ReferenceMenuCatalog(menuText:String(contentsOf:menu,encoding:.windowsCP1252),commandsText:String(contentsOf:commands,encoding:.windowsCP1252))
+        cacheLock.lock();if bundleCache.count>=8{bundleCache.removeAll()};bundleCache[key]=catalog;cacheLock.unlock()
+        return catalog
     }
 }
 
