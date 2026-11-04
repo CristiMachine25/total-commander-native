@@ -1,5 +1,16 @@
 # Native validation ledger
 
+## 0.9.0 keybindings, tab views and appearance — 4 November 2026
+
+- The complete backend/provider suite exited 0: [full run](analysis/0.9-full-tests.log). This snapshot preceded the final targeted keyboard-focus and dark-label contrast corrections; their separate regression results are recorded below.
+- Final focused corrections passed: [10 pane tab-shortcut assertions](analysis/0.9-pane-tab-shortcuts-tests.log) and [27 appearance assertions](analysis/0.9-appearance-contrast-tests.log), including text-field isolation and light-color restoration.
+- Dedicated Keybindings editor: 18 assertions for capture, assignment, duplicate rejection, selected-row replacement, New, removal/reset, pending drafts, and key-equivalent focus isolation. Native configuration v4 migration: 59 assertions; original display INI import: 45; per-tab view state: 38.
+- Visible optimized mounted-DMG checks: recorded Ctrl+Shift+B, assigned cm_srcshort, applied it, and used it in a file pane to enter Brief view. Separate One/Two disposable tabs restored Brief/Full layouts. Ctrl+Tab worked; Ctrl+Shift+Tab exposed an AppKit table interception issue that was corrected before final packaging.
+- Dark appearance rendered both panes and the main interface; low-contrast disk/status labels found during inspection were corrected before final packaging.
+- Original saved configuration was independently compared after testing: all existing values match the baseline; only the four new default fields were added. Both original pane paths, tab counts, selected tabs and Full layouts match the baseline. Temporary shortcut removed, light appearance restored, marked disposable fixture deleted.
+- Corrected optimized mounted build: Ctrl+Shift+Tab and Ctrl+Tab visibly switched Full-view tabs in both directions; the created tab was closed. Dark disk headings and status/summary text were visibly readable. The optimized smoke exited 0; settings and tab counts were compared again after quitting and match the baseline.
+- This release implements 96 typed top-level settings, not every original Total Commander option. See [remaining differences](analysis/remaining-parity-gaps.md).
+
 ## 0.8.0 display settings validation — 4 November 2026
 
 - Post-package visible follow-up: after the user authorized continuing, navigation from the image fixture to Documents restored the standard Name/Ext/Size/Date/Attr columns. Demo profiles were removed through the native JSON editor while preserving all other current settings; persisted data was independently compared with the intended cleanup. The original pane paths were restored and the marked temporary fixture deleted. This follow-up supplements the ledger bundled at packaging time.

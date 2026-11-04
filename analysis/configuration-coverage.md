@@ -1,3 +1,9 @@
+# Configuration coverage: 0.9.0
+
+Adds tabsRememberViewSettings, tabsRememberFileFilters, appearanceMode and darkPalette: 96 top-level configuration fields, with nested profiles/palettes. A dedicated Keybindings page edits existing shortcut/alias fields. Normal and dark mode overrides are separate. Native JSON format is now version 4 with versions 1–3 migration.
+
+Original display-profile INI sections have a validated subset importer; unsupported semantics remain reported. See [INI scope](original-display-ini.md), [keybindings](keybindings.md), [appearance](appearance-settings.md) and [per-tab state](per-tab-view-settings.md). None of these counts establish complete original parity.
+
 # Configuration coverage: 0.8.0
 
 Adds six structured settings to the 86-field 0.7 schema: customColumnSets, activeCustomColumnSetID, viewModes, autoSwitchRules, autoSwitchEnabled and autoSwitchRestoreDefault. The three previously unsupported configuration pages now have real editors and runtime behavior. This count is not a percentage of original parity.

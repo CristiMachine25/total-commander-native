@@ -18,8 +18,8 @@ Manual named-mode and custom-column choices persist per pane when Save on exit i
 
 - Windows drive-letter/device/UNC/virtual/plugin/search-result predicates have no equivalent implemented native provider. They are not presented as working rules.
 - The native segmented tab control renders a color swatch and symbol, not an original full-tab color and Windows icon-resource path. There are no competing custom-icon providers, so no inert priority option is exposed.
-- Separate normal/dark palettes and arbitrary `cm_`/`em_` commands are not implemented.
-- Per-tab view overrides and original `wincmd.ini` view-mode/rule import/export are not implemented; the native JSON representation is validated and round-trippable.
+- Normal/dark palettes and per-tab restoration were added in 0.9. Arbitrary `cm_`/`em_` commands remain unsupported.
+- Per-tab views and a reported subset of original INI imports were added in 0.9; see the dedicated reports. Original INI export and all original serialized forms remain incomplete.
 - A custom sort with an explicit column-set ID must belong to that set. With columns unchanged, a missing current custom column falls back to the native name comparator; this is a bounded native behavior, not a full original plugin sorting implementation.
 
 ## Verification

@@ -2,7 +2,7 @@
 
 A native, keyboard-driven dual-pane file manager for **Apple Silicon · macOS 13+**. Browse your Mac folders and mounted volumes directly, with a classic Total Commander-style interface—no Wine or Windows runtime.
 
-**0.8.0 development build.** This is an independent reconstruction, not an official Ghisler release or a complete port. [Compatibility and remaining work →](analysis/remaining-parity-gaps.md)
+**0.9.0 development build.** This is an independent reconstruction, not an official Ghisler release or a complete port. [Compatibility and remaining work →](analysis/remaining-parity-gaps.md)
 
 [Download a build](https://github.com/CristiMachine25/total-commander-native/releases) · [Test results](TEST-RESULTS.md) · [Feature coverage](analysis/native-coverage.md)
 
@@ -64,9 +64,13 @@ This is one native horizontal bar. Windows `.bar` files, nested/vertical bars, D
 
 **Configuration → Options → Tabstops** controls file-size display: bytes, kilobytes, automatic units, or fixed MB/GB. Header/footer units can be chosen separately, with 1000- or 1024-byte bases.
 
-The app currently saves **92 top-level settings, including structured column sets, view modes and rules** for layout, fonts, colors, icons, columns, tabs, viewing, quick search and more. Not every original setting is implemented; unsupported categories identify their missing options.
+The app currently saves **96 top-level settings, including structured column sets, view modes, rules and dark palettes** for layout, fonts, colors, icons, columns, tabs, viewing, quick search and more. Not every original setting is implemented; unsupported categories identify their missing options.
 
 Working configuration pages include:
+
+- **Keybindings:** searchable native commands, recorded shortcuts, conflict detection, New/Assign/Remove/Reset, and command aliases. Valid pending edits are collected on Apply; removing an override restores the built-in binding.
+- **Color:** Light, Dark or Follow macOS, with an independent dark palette. The original Dark ↔ Normal command works.
+- **Folder Tabs:** optionally retain each tab’s manual view, custom columns, named mode, sorting, filters and selection; local tabs restore these with the saved session.
 
 - **Custom Columns:** up to 29 saved sets with ordered captions, field expressions, widths and alignment; choose a set from Show or Shift+F1. Built-in metadata, date formatting, substrings and conditional text are supported.
 - **View Modes:** named column layouts, primary/secondary sorting, filters, colors and tab appearance, with supported native enter/leave commands.
@@ -121,3 +125,5 @@ Packaging rejects a compiled stage whose source hashes no longer match the check
 Original code and documentation in this project are licensed under the [MIT License](LICENSE).
 
 Third-party components and material are excluded from that grant and retain their original rights and terms. This includes 7-Zip, the Total Commander application icon and toolbar artwork, and the original menu and command definitions. See [third-party notices](THIRD-PARTY.txt). The MIT license does not grant rights to those materials or to the Total Commander name or trademarks.
+
+Version 4 configuration files migrate versions 1–3. Original INI import now supports a validated subset of CustomFields, ViewModes and ViewModeSwitch; unsupported Windows/plugin semantics are reported, and linked invalid profiles leave existing profiles intact. [INI import scope](analysis/original-display-ini.md) · [Keybindings](analysis/keybindings.md) · [Appearance](analysis/appearance-settings.md) · [Per-tab views](analysis/per-tab-view-settings.md)
