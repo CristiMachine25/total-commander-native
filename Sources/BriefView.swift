@@ -80,7 +80,15 @@ final class BriefGridView:NSView {
             NSColor.separatorColor.setFill();NSRect(x:CGFloat(column+1)*columnWidth-1,y:0,width:1,height:bounds.height).fill()
         }
     }
+    override func menu(for event:NSEvent)->NSMenu? {
+        guard let pane else{return nil}
+        let point=convert(event.locationInWindow,from:nil)
+        let index=BriefLayout.index(column:Int(floor(point.x/columnWidth)),row:Int(floor(point.y/rowHeight)),rows:rowsPerColumn,count:pane.entries.count+1)
+        return pane.contextMenu(forRow:index ?? -1)
+    }
+    override func rightMouseDown(with event:NSEvent) {if let menu=menu(for:event){NSMenu.popUpContextMenu(menu,with:event,for:self)}}
     override func mouseDown(with event:NSEvent) {
+        if event.modifierFlags.contains(.control) {rightMouseDown(with:event);return}
         guard let pane else{return}
         pane.onActivate?();window?.makeFirstResponder(self)
         let point=convert(event.locationInWindow,from:nil)

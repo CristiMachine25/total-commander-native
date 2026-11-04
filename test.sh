@@ -93,5 +93,7 @@ xcrun swiftc -swift-version 5 -framework AppKit -framework ImageIO "${PANE_SOURC
 "$TEST_WORK/pane-views"
 xcrun swiftc -swift-version 5 -framework AppKit -framework ImageIO "${PANE_SOURCES[@]}" "$TEST_WORK/MainWithoutEntry.swift" Tests/PanePerformanceTests.swift -o "$TEST_WORK/pane-performance"
 "$TEST_WORK/pane-performance"
+xcrun swiftc -swift-version 5 -framework AppKit -framework ImageIO "${PANE_SOURCES[@]}" "$TEST_WORK/MainWithoutEntry.swift" Tests/ContextMenuTests.swift -o "$TEST_WORK/context-menu"
+"$TEST_WORK/context-menu"
 "${FTP_TEST_PYTHON:-python3}" Tests/ProviderIntegration.py "$TEST_WORK/ui" "$PWD/Resources/7zz"
 printf '%s\n' 'All native backend and provider integration suites passed.'

@@ -130,17 +130,15 @@ extension CommanderController {
     }
     @objc func shortcutTabSelected(_ item:NSMenuItem) { selectTab(item.tag) }
     func keyboardContextMenu() {
-        let menu=NSMenu(title:"File context")
-        for (title,tag) in [("View",3),("Edit",4),("Copy",5),("Move",6),("New folder",7),("Move to Trash",8)] {
-            let item=NSMenuItem(title:title,action:#selector(menuAction(_:)),keyEquivalent:"");item.target=self;item.tag=tag;menu.addItem(item)
+        let pane=activePane,row=pane.table.selectedRow
+        guard let menu=pane.contextMenu(forRow:row) else{return}
+        let target:NSView,rect:NSRect
+        switch pane.viewMode {
+        case .brief:target=pane.briefGrid;rect=pane.briefGrid.cellRect(max(0,row))
+        case .thumbnails:target=pane.thumbnailGrid;rect=pane.thumbnailGrid.cellRect(max(0,row))
+        default:target=pane.table;rect=row>=0 ? pane.table.rect(ofRow:row):.zero
         }
-        let properties=NSMenuItem(title:"Properties",action:#selector(fileProperties),keyEquivalent:"");properties.target=self;menu.addItem(properties)
-        let row=activePane.table.selectedRow
-        let point=row >= 0 ? NSPoint(x:20,y:activePane.table.rect(ofRow:row).maxY) : .zero
-        if activePane.brief {
-            let cell=activePane.briefGrid.cellRect(max(0,row))
-            menu.popUp(positioning:nil,at:NSPoint(x:cell.minX+20,y:cell.maxY),in:activePane.briefGrid)
-        } else {menu.popUp(positioning:nil,at:point,in:activePane.table)}
+        menu.popUp(positioning:nil,at:NSPoint(x:rect.minX+20,y:rect.maxY),in:target)
     }
     func copyWithinFolder() {
         guard permitFileAction() else{return}

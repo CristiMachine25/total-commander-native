@@ -95,7 +95,15 @@ final class ThumbnailGridView:NSView {
             (text as NSString).draw(in:NSRect(x:rect.minX+4,y:rect.minY+CGFloat(pixels)+12,width:rect.width-8,height:32),withAttributes:[.font:pane.configuredFont,.foregroundColor:pane.itemColor(marked:marked,selected:selected),.paragraphStyle:paragraph])
         }
     }
+    override func menu(for event:NSEvent)->NSMenu? {
+        guard let pane else{return nil}
+        let point=convert(event.locationInWindow,from:nil)
+        let index=ThumbnailLayout.index(column:Int(floor(point.x/cellWidth)),row:Int(floor(point.y/cellHeight)),columns:columns,count:pane.entries.count+1)
+        return pane.contextMenu(forRow:index ?? -1)
+    }
+    override func rightMouseDown(with event:NSEvent) {if let menu=menu(for:event){NSMenu.popUpContextMenu(menu,with:event,for:self)}}
     override func mouseDown(with event:NSEvent) {
+        if event.modifierFlags.contains(.control) {rightMouseDown(with:event);return}
         guard let pane else{return};pane.onActivate?();window?.makeFirstResponder(self)
         let point=convert(event.locationInWindow,from:nil)
         guard let index=ThumbnailLayout.index(column:Int(floor(point.x/cellWidth)),row:Int(floor(point.y/cellHeight)),columns:columns,count:pane.entries.count+1) else{return}

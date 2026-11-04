@@ -16,12 +16,19 @@ func label(_ text: String, color: NSColor = .black, size: CGFloat = 13) -> NSTex
 final class CommanderTable: NSTableView {
     var keyHandler: ((NSEvent) -> Bool)?
     var focusHandler: (() -> Void)?
+    var contextMenuHandler: ((Int) -> NSMenu?)?
     var selectAllHandler: (() -> Void)?
     override func selectAll(_ sender: Any?) { selectAllHandler?() }
     override func becomeFirstResponder() -> Bool {
         let result = super.becomeFirstResponder()
         if result { focusHandler?() }
         return result
+    }
+    override func menu(for event:NSEvent)->NSMenu? {contextMenuHandler?(row(at:convert(event.locationInWindow,from:nil)))}
+    override func rightMouseDown(with event:NSEvent) {if let menu=menu(for:event){NSMenu.popUpContextMenu(menu,with:event,for:self)}}
+    override func mouseDown(with event:NSEvent) {
+        if event.modifierFlags.contains(.control) {rightMouseDown(with:event);return}
+        super.mouseDown(with:event)
     }
     override func keyDown(with event: NSEvent) {
         if keyHandler?(event) == true { return }
@@ -82,6 +89,8 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
     var onPath: ((String) -> Void)?
     var onLocal: ((URL) -> Void)?
     var onKey: ((NSEvent) -> Bool)?
+    var onContextMenu: ((Int) -> NSMenu?)?
+    var contextMenuAllowed: (() -> Bool)?
     var backHistory: [PaneLocation] = []
     var forwardHistory: [PaneLocation] = []
     var tabs: [PaneLocation] = []
@@ -150,6 +159,7 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
             return self.onKey?(event) ?? false
         }
         table.focusHandler = { [weak self] in self?.onActivate?() }
+        table.contextMenuHandler = { [weak self] row in self?.contextMenu(forRow:row) }
         table.selectAllHandler = { [weak self] in
             guard let self = self else { return }
             self.marked = Set(self.entries.filter{self.configuration.selectionIncludesDirectories || !$0.isDirectory}.map(\.url))
@@ -561,6 +571,7 @@ class CommanderController: NSObject, NSWindowDelegate, NSUserInterfaceValidation
             pane.onTreeOpen={ [weak self,weak opposite] location in guard let self,let opposite else{return};self.navigate(location,pane:opposite,focus:false)}
             pane.restoreViewMode()
         }
+        installFileContextMenus()
         activate(0)
         separateTrees.restore()
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
