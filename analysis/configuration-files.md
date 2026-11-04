@@ -1,3 +1,16 @@
+# Native configuration version 3
+
+Version 3 includes saved custom-column sets, named view modes and automatic switching rules. Version 1 and 2 exports migrate with empty display profiles and automatic switching disabled; all existing fields are retained. Import validates nested field types, bounded values, expressions, unique IDs and cross-references. Unsupported plugin expressions and unknown auto-run commands are rejected. These are native JSON definitions, not Windows INI profile import.
+
+Current focused test command:
+
+```sh
+xcrun swiftc -swift-version 5 -framework AppKit Sources/FileService.swift Sources/CustomColumns.swift Sources/ViewModeSettings.swift Sources/ConfigurationModel.swift Sources/ShortcutSettings.swift Sources/ConfigurationFiles.swift Tests/ConfigurationFilesTests.swift -o /tmp/tc-config-files-tests
+/tmp/tc-config-files-tests
+```
+
+The prior format and INI evidence follows; earlier test counts are historical.
+
 # Configuration file exchange
 
 Native version 2 JSON files export and restore the entire `CommanderConfiguration` schema. The envelope identifies `total-commander-native-configuration`, version 2, and a `configuration` object. Export uses atomic replacement. Import is data-only and returns a configuration without changing saved preferences. UI callers choose when to apply/save it.

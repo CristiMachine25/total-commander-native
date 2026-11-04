@@ -1,0 +1,3 @@
+Existing configuration UI fixture: PASS: 38 configuration UI assertions
+New display-settings fixture: PASS: 17 display-settings UI assertions
+Both compiled from frozen snapshots and exited 0.

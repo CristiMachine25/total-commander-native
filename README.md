@@ -2,7 +2,7 @@
 
 A native, keyboard-driven dual-pane file manager for **Apple Silicon · macOS 13+**. Browse your Mac folders and mounted volumes directly, with a classic Total Commander-style interface—no Wine or Windows runtime.
 
-**0.7.0 development build.** This is an independent reconstruction, not an official Ghisler release or a complete port. [Compatibility and remaining work →](analysis/remaining-parity-gaps.md)
+**0.8.0 development build.** This is an independent reconstruction, not an official Ghisler release or a complete port. [Compatibility and remaining work →](analysis/remaining-parity-gaps.md)
 
 [Download a build](https://github.com/CristiMachine25/total-commander-native/releases) · [Test results](TEST-RESULTS.md) · [Feature coverage](analysis/native-coverage.md)
 
@@ -64,9 +64,13 @@ This is one native horizontal bar. Windows `.bar` files, nested/vertical bars, D
 
 **Configuration → Options → Tabstops** controls file-size display: bytes, kilobytes, automatic units, or fixed MB/GB. Header/footer units can be chosen separately, with 1000- or 1024-byte bases.
 
-The app currently saves **86 settings** for layout, fonts, colors, icons, columns, tabs, viewing, quick search and more. Not every original setting is implemented; unsupported categories identify their missing options.
+The app currently saves **92 top-level settings, including structured column sets, view modes and rules** for layout, fonts, colors, icons, columns, tabs, viewing, quick search and more. Not every original setting is implemented; unsupported categories identify their missing options.
 
-New working configuration pages include:
+Working configuration pages include:
+
+- **Custom Columns:** up to 29 saved sets with ordered captions, field expressions, widths and alignment; choose a set from Show or Shift+F1. Built-in metadata, date formatting, substrings and conditional text are supported.
+- **View Modes:** named column layouts, primary/secondary sorting, filters, colors and tab appearance, with supported native enter/leave commands.
+- **Auto Switch Mode:** ordered folder/provider/file-mask rules, AND/OR/NOT conditions and file-percentage thresholds, applied after successful navigation with optional default restoration.
 
 - **Copy/Delete and Confirmation:** local copy/move destination and overwrite policies, metadata preservation, copy verification, buffer size, and Trash preference. Permanent deletion always confirms the actual files.
 - **Refresh:** activation refresh, optional local-folder monitoring, foreground-only operation and excluded paths. Metadata polling is opt-in, nonrecursive and runs off the UI thread.
@@ -84,7 +88,7 @@ New working configuration pages include:
 
 Formatter reuse, cached settings pages and menu resources, reusable file cells, and reduced metadata queries improve responsiveness. The [settings benchmarks](analysis/configuration-performance.md), [pane benchmarks](analysis/pane-responsiveness.md) and [directory-listing benchmarks](analysis/directory-listing-performance.md) document the measured gains and limits. These are measurements on the test Mac, not proof of Windows-equivalent speed.
 
-Full Windows plugin support, all original settings and shortcuts, custom columns/view rules, complete archive/FTP options, and pixel-identical rendering remain unfinished. Synchronization does not mirror deletions; Ignore List currently filters displayed entries only. See [remaining differences](analysis/remaining-parity-gaps.md) and the release-specific [validation ledger](TEST-RESULTS.md).
+Full Windows plugin support, all original settings and shortcuts, Windows content-plugin columns and platform-specific view rules, complete archive/FTP options, and pixel-identical rendering remain unfinished. Synchronization does not mirror deletions; Ignore List currently filters displayed entries only. See [remaining differences](analysis/remaining-parity-gaps.md) and the release-specific [validation ledger](TEST-RESULTS.md).
 
 ## Build and test
 

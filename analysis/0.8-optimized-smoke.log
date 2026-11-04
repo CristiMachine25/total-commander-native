@@ -1,0 +1,4 @@
+sandbox_extension_issue_file_to_process failed for /var/folders/sn/_l3lknnd5wv4ckd0q288ts_w0000gn/T/tc-native-_87k27x1/Total Commander Native.app: 1 (Operation not permitted)
+Button bar UI integration passed: add, edit, reorder, separator, delete, command dispatch, cancel, preference isolation
+Configuration UI integration passed: size cells, columns, row heights, layout, selection, thumbnails, tree, masks
+UI smoke tests passed

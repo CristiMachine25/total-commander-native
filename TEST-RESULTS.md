@@ -1,5 +1,16 @@
 # Native validation ledger
 
+## 0.8.0 display settings validation — 4 November 2026
+
+- The complete backend/provider test script exited 0 against the final frozen source. [Full run](analysis/0.8-full-tests.log). The optimized application smoke also exited 0; [smoke output](analysis/0.8-optimized-smoke.log).
+- Visible read-only mounted-DMG check: a staged image-folder rule applied custom Bytes and Size MB columns and descending size order to the image fixture; the opposite pane retained standard columns. Full interactive navigation/restoration testing was interrupted by a concurrent user opening Configuration, so those paths are covered by controller tests rather than claimed as visible passes.
+
+- Custom columns: 29 expression/model and 13 actual-pane assertions, including numeric/date sorting, hidden standard columns, per-pane configuration and extension placement. [Evidence](analysis/0.8-custom-columns-tests.log).
+- View modes and automatic rules: 46 actual-controller/model assertions, covering conditions, precedence, manual/automatic transitions, restoration, startup, pane swaps, secondary sorting, original command routing and invalid references. [Evidence](analysis/0.8-view-settings-tests.log).
+- Actual draft editors: 17 new assertions plus 38 existing configuration UI assertions. [Evidence](analysis/0.8-display-settings-ui-tests.log).
+- Native JSON version 3 migration: 58 assertions including full nested profile round trips, older version defaults, broken references and strict import validation.
+
+
 ## 0.7.0 configuration validation — 4 November 2026
 
 - The complete native backend/provider test script exited 0. Evidence: [full run](analysis/0.7-full-tests.log). This frozen snapshot preceded the final two tab corrections and per-pane refresh-cache correction.

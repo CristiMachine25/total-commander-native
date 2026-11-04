@@ -1,3 +1,14 @@
+# Configuration coverage: 0.8.0
+
+Adds six structured settings to the 86-field 0.7 schema: customColumnSets, activeCustomColumnSetID, viewModes, autoSwitchRules, autoSwitchEnabled and autoSwitchRestoreDefault. The three previously unsupported configuration pages now have real editors and runtime behavior. This count is not a percentage of original parity.
+
+- [Custom columns](custom-columns.md): builtin fields, layout, sorting and source evidence.
+- [View modes and rules](view-mode-settings.md): supported options, transitions and restrictions.
+- [Draft editor behavior](display-settings-ui.md): validation and Apply/Cancel.
+- Native JSON is version 3 with strict v1/v2 migration; original custom-column/view-mode INI sections are still reported unsupported.
+
+The historical configuration baseline follows.
+
 # Current configuration status — 0.7
 
 The native configuration now contains 86 typed settings. This update adds working Copy/Delete, Confirmation, Refresh, FTP, Packer and ZIP Packer pages, plus keyboard/alias settings, local tab locking and tab controls, alternating row colors, custom date/time separators and 12-hour formatting. New behavior and precise boundaries are documented in [copy/delete](copy-delete-settings.md), [archive/FTP](archive-ftp-settings.md), [refresh/display](refresh-display-settings.md), [shortcuts](shortcut-settings.md), and [configuration files](configuration-files.md).
