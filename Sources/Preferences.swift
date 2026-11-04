@@ -39,6 +39,8 @@ final class PreferencesController:NSWindowController,NSWindowDelegate,NSTableVie
     private let categories=NSTableView(),page=NSStackView(),scroller=NSScrollView()
     private let heading=NSTextField(labelWithString:""),note=NSTextField(wrappingLabelWithString:"")
     private var readers:[()throws->Void]=[]
+    private struct CachedPage {let views:[NSView];let readers:[()throws->Void]}
+    private var cachedPages:[Int:CachedPage]=[:]
     private var currentPage=0,changingSelection=false
     init(_ commander:CommanderController) {
         self.commander=commander;draft=commander.runtimeConfig;draft.showHidden=commander.showHidden
@@ -116,9 +118,15 @@ final class PreferencesController:NSWindowController,NSWindowDelegate,NSTableVie
         objc_setAssociatedObject(button,&configurationBrowseKey,target,.OBJC_ASSOCIATION_RETAIN_NONATOMIC);page.addArrangedSubview(button)
     }
     private func showPage(_ index:Int){
+        if !page.arrangedSubviews.isEmpty {cachedPages[currentPage]=CachedPage(views:page.arrangedSubviews,readers:readers)}
         currentPage=index;readers.removeAll();for view in page.arrangedSubviews{page.removeArrangedSubview(view);view.removeFromSuperview()}
         let descriptor=ConfigurationPage.all[index];heading.stringValue=descriptor.title
         note.stringValue="Not yet implemented on this page: "+descriptor.missing
+        if let cached=cachedPages[index] {
+            for view in cached.views{page.addArrangedSubview(view)};readers=cached.readers
+            scroller.contentView.scroll(to:.zero);scroller.reflectScrolledClipView(scroller.contentView)
+            return
+        }
         switch descriptor.title {
         case "Layout":
             checkbox("Show button bar",\.showButtonBar);checkbox("Show drive combobox",\.showDriveList);checkbox("Show folder tabs",\.showFolderTabs);checkbox("Show current directory",\.showCurrentDirectory);checkbox("Show tabstop header",\.showColumnHeaders);checkbox("Show status bar",\.showStatusBar);checkbox("Show command line",\.showCommandLine);checkbox("Show function key buttons",\.showFunctionButtons);checkbox("Vertical arrangement (panels above/below)",\.verticalArrangement)
@@ -149,7 +157,11 @@ final class PreferencesController:NSWindowController,NSWindowDelegate,NSTableVie
         }
         scroller.contentView.scroll(to:.zero);scroller.reflectScrolledClipView(scroller.contentView)
     }
-    @objc private func restoreDefaults(){draft=CommanderConfiguration();showPage(currentPage)}
+    @objc private func restoreDefaults(){
+        draft=CommanderConfiguration();cachedPages.removeAll();readers.removeAll()
+        for view in page.arrangedSubviews{page.removeArrangedSubview(view);view.removeFromSuperview()}
+        showPage(currentPage)
+    }
     @objc private func dismiss(){close()}
     private func save()->Bool{
         do {
@@ -160,7 +172,7 @@ final class PreferencesController:NSWindowController,NSWindowDelegate,NSTableVie
             }
             guard draft.fileFontName == "Tahoma" || NSFont(name:draft.fileFontName,size:draft.fileFontSize) != nil else{throw failure("The file list font is not installed. Enter its macOS font name.")}
             guard NSFont(name:draft.viewerFontName,size:draft.viewerFontSize) != nil else{throw failure("The internal viewer font is not installed.")}
-            if commander?.remember != false {try draft.save()};commander?.applyConfiguration(draft);commander?.refresh();return true
+            if commander?.remember != false {try draft.save()};commander?.applyConfiguration(draft);return true
         }catch{show(error);return false}
     }
     @objc private func applyWithoutClosing(){if save(){showPage(currentPage)}}

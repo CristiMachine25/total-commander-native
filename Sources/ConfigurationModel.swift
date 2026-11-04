@@ -166,11 +166,11 @@ struct CommanderConfiguration:Codable,Equatable {
         defaults.set(c.externalEditorEnabled ? c.externalEditorPath : "",forKey:"externalEditor")
     }
     func sizeString(_ bytes:Int64,locale:Locale = .current)->String {
-        let value=max(0,bytes),formatter=NumberFormatter(),base=useDecimalUnits ? 1000.0 : 1024.0
-        formatter.locale=locale;formatter.numberStyle = .decimal;formatter.usesGroupingSeparator=true;formatter.groupingSize=3;formatter.maximumFractionDigits=0
-        func formatted(_ value:Double,_ digits:Int=0)->String {formatter.maximumFractionDigits=digits;return formatter.string(from:NSNumber(value:value)) ?? "0"}
+        let value=max(0,bytes),base=useDecimalUnits ? 1000.0 : 1024.0
+        let cache=ConfigurationFormatterCache.current
+        func formatted(_ value:Double,_ digits:Int=0)->String {cache.number(locale:locale,digits:digits).string(from:NSNumber(value:value)) ?? "0"}
         switch sizeFormat {
-        case .bytes:return formatter.string(from:NSNumber(value:value)) ?? String(value)
+        case .bytes:return cache.number(locale:locale,digits:0).string(from:NSNumber(value:value)) ?? String(value)
         case .kilobytes:return formatted(Double(value)/base)+" k"
         case .megabytes:return formatted(Double(value)/(base*base),2)+" MB"
         case .gigabytes:return formatted(Double(value)/(base*base*base),2)+" GB"
@@ -187,12 +187,42 @@ struct CommanderConfiguration:Codable,Equatable {
     }
     func footerSizeString(_ bytes:Int64,locale:Locale = .current)->String {var copy=self;if let footerSizeFormat{copy.sizeFormat=footerSizeFormat};return copy.sizeString(bytes,locale:locale)}
     func dateString(_ date:Date,locale:Locale = .current,timeZone:TimeZone = .current)->String {
+        ConfigurationFormatterCache.current.date(locale:locale,timeZone:timeZone,order:dateOrder,seconds:showSeconds,century:showCentury).string(from:date)
+    }
+}
+
+/// A formatter is expensive to construct. File-list painting shares instances on
+/// its current thread, never across worker threads. Keys include every formatting
+/// input, so a changed locale, time zone or display setting takes effect immediately.
+private final class ConfigurationFormatterCache:NSObject {
+    private struct NumberKey:Hashable {let locale:Locale;let digits:Int}
+    private struct DateKey:Hashable {let locale:Locale;let zone:TimeZone;let order:CommanderConfiguration.DateOrder;let seconds:Bool;let century:Bool}
+    private var numbers:[NumberKey:NumberFormatter]=[:]
+    private var dates:[DateKey:DateFormatter]=[:]
+    private static let threadKey="local.totalcommander.configuration-formatters"
+    static var current:ConfigurationFormatterCache {
+        let storage=Thread.current.threadDictionary
+        if let cache=storage[threadKey] as? ConfigurationFormatterCache{return cache}
+        let cache=ConfigurationFormatterCache();storage[threadKey]=cache;return cache
+    }
+    func number(locale:Locale,digits:Int)->NumberFormatter {
+        let key=NumberKey(locale:locale,digits:digits)
+        if let formatter=numbers[key]{return formatter}
+        let formatter=NumberFormatter();formatter.locale=locale;formatter.numberStyle = .decimal
+        formatter.usesGroupingSeparator=true;formatter.groupingSize=3;formatter.maximumFractionDigits=digits
+        if numbers.count>=32{numbers.removeAll(keepingCapacity:true)}
+        numbers[key]=formatter;return formatter
+    }
+    func date(locale:Locale,timeZone:TimeZone,order:CommanderConfiguration.DateOrder,seconds:Bool,century:Bool)->DateFormatter {
+        let key=DateKey(locale:locale,zone:timeZone,order:order,seconds:seconds,century:century)
+        if let formatter=dates[key]{return formatter}
         let formatter=DateFormatter();formatter.locale=locale;formatter.timeZone=timeZone
-        if dateOrder == .system {formatter.dateStyle = .short;formatter.timeStyle=showSeconds ? .medium : .short;formatter.dateFormat=formatter.dateFormat.replacingOccurrences(of:"y+",with:showCentury ? "yyyy" : "yy",options:.regularExpression)}
+        if order == .system {formatter.dateStyle = .short;formatter.timeStyle=seconds ? .medium : .short;formatter.dateFormat=formatter.dateFormat.replacingOccurrences(of:"y+",with:century ? "yyyy" : "yy",options:.regularExpression)}
         else {
-            let year=showCentury ? "yyyy" : "yy",time=showSeconds ? "HH:mm:ss" : "HH:mm"
-            switch dateOrder {case .dayFirst:formatter.dateFormat="dd.MM."+year+" "+time;case .monthFirst:formatter.dateFormat="MM/dd/"+year+" "+time;case .yearFirst:formatter.dateFormat=year+"-MM-dd "+time;case .system:break}
+            let year=century ? "yyyy" : "yy",time=seconds ? "HH:mm:ss" : "HH:mm"
+            switch order {case .dayFirst:formatter.dateFormat="dd.MM."+year+" "+time;case .monthFirst:formatter.dateFormat="MM/dd/"+year+" "+time;case .yearFirst:formatter.dateFormat=year+"-MM-dd "+time;case .system:break}
         }
-        return formatter.string(from:date)
+        if dates.count>=32{dates.removeAll(keepingCapacity:true)}
+        dates[key]=formatter;return formatter
     }
 }
