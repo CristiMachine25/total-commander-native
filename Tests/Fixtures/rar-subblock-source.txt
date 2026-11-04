@@ -1,0 +1,3 @@
+Source: https://raw.githubusercontent.com/libarchive/libarchive/master/libarchive/test/test_read_format_rar_subblock.rar.uu
+Libarchive test fixture, test_read_format_rar_subblock.
+Expected member test.txt contains test text document followed by CRLF.
