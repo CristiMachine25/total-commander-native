@@ -1,5 +1,16 @@
 # Native validation ledger
 
+## 0.6.0 button bar validation — 4 November 2026
+
+- 12 model assertions passed: defaults, persisted order/separators/labels/icon size, empty bars, malformed saved data, argument quoting and literal shell-like text, and invalid configuration rejection.
+- 31 reference-menu assertions passed; the original Button Bar command is enabled.
+- Optimized application smoke passed, including actual editor add/edit/reorder/separator/delete, toolbar command dispatch, Cancel semantics and preference isolation. See [smoke output](analysis/0.6-button-bar-smoke.log).
+- Visible mounted-DMG checks passed: Configuration → Button Bar opened the editor; adding a Full View button and text labels applied immediately; the command returned a Brief pane to Full view; right-click opened Change; long toolbar exposed horizontal scrolling; the custom button and label setting survived quit/relaunch.
+- Cancel discarded an unsaved label. Restore Defaults restored the original fourteen buttons. A configured `/usr/bin/touch` button with a quoted temporary pathname and local start path created the expected empty file, independently verified on disk and then removed. Test buttons were removed and default settings restored.
+- Editor screenshot contains only default commands, no personal files.
+
+The full backend suite was not repeated for this toolbar change. Windows .bar files, nested/vertical bars, DLL icons and parameter macros remain outside this implementation; see [button-bar scope](analysis/button-bar.md).
+
 ## 0.5.1 validation — 4 November 2026
 
 Targeted interaction update: 24 context-menu regression assertions passed against a frozen full-source snapshot. Coverage includes clicked-pane activation, marked-group preservation/replacement, blank space and parent rows, Full/Brief/thumbnail hit testing, stale-action rejection, busy/loading guards, and FTP/read-only archive action availability. The optimized application passed its configuration/UI smoke including Escape from command/path fields and Space marking nonadjacent rows; see [smoke output](analysis/0.5.1-smoke.log). The complete backend suite was not repeated for this interaction-only update; 0.5.0 results remain separately recorded below.

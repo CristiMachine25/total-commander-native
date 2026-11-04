@@ -48,6 +48,8 @@ Some Mac keyboards require **Fn** for function keys. Supported original Control 
 
 ## Customize the button bar
 
+![Native button bar configuration with default commands](docs/screenshots/button-bar.png)
+
 Open **Configuration → Button Bar…**, right-click a toolbar button and choose **Change…**, or click the **…** button at the end of the bar.
 
 Add or delete buttons, move them up/down in the order, and insert separators. Each button can run a supported internal command or open a Mac app, program, file or folder. Choose a tooltip/label and optional image file; executable programs accept quoted literal parameters and a local start path. Icon sizes range from 16–48 pixels, with optional text labels and horizontal scrolling for long bars.
