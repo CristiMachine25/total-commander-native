@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
 """Build the native ARM64 development app and DMG. No Windows runtime."""
 from pathlib import Path
-import subprocess, tempfile, shutil, plistlib, os
+import subprocess, tempfile, shutil, plistlib, os, hashlib, json
 base=Path(__file__).resolve().parent
 stage=Path(tempfile.mkdtemp(prefix='tc-native-'))
 app=stage/'Total Commander Native.app'
 res=app/'Contents/Resources';res.mkdir(parents=True)
 binary=app/'Contents/MacOS/NativeCommander';binary.parent.mkdir()
 def run(*args): subprocess.run([str(x) for x in args],check=True)
+source_hashes={str(p.relative_to(base)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted((base/'Sources').glob('*.swift'))}
 run('xcrun','swiftc','-swift-version','5','-O','-target','arm64-apple-macosx13.0','-framework','AppKit','-framework','ImageIO',*sorted((base/'Sources').glob('*.swift')),'-o',binary)
+assert source_hashes=={str(p.relative_to(base)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted((base/'Sources').glob('*.swift'))}, 'Sources changed during compilation; rebuild required'
+(res/'build-manifest.json').write_text(json.dumps(source_hashes,indent=2)+'\n')
 shutil.copy2(base/'Resources/7zz',res/'7zz')
 for name in ['WCMD_ENG.MNU','TOTALCMD.INC']:
  shutil.copy2(base/'Resources'/name,res/name)
@@ -18,7 +21,7 @@ shutil.copy2(base/'Resources/TotalCommander.icns',res/'TotalCommander.icns')
 for name in ['README.md','TEST-RESULTS.md','THIRD-PARTY.txt']:
  if (base/name).exists(): shutil.copy2(base/name,res/name)
 shutil.copytree(base/'analysis',res/'analysis')
-info=dict(CFBundleName='Total Commander Native',CFBundleIconFile='TotalCommander',CFBundleDisplayName='Total Commander Native',CFBundleIdentifier='local.totalcommander.native',CFBundleExecutable='NativeCommander',CFBundlePackageType='APPL',CFBundleShortVersionString='0.4.0',CFBundleVersion='4',LSMinimumSystemVersion='13.0',NSHighResolutionCapable=True,NSPrincipalClass='NSApplication')
+info=dict(CFBundleName='Total Commander Native',CFBundleIconFile='TotalCommander',CFBundleDisplayName='Total Commander Native',CFBundleIdentifier='local.totalcommander.native',CFBundleExecutable='NativeCommander',CFBundlePackageType='APPL',CFBundleShortVersionString='0.5.0',CFBundleVersion='5',LSMinimumSystemVersion='13.0',NSHighResolutionCapable=True,NSPrincipalClass='NSApplication')
 (app/'Contents/Info.plist').write_bytes(plistlib.dumps(info))
 run('codesign','--force','--sign','-',res/'7zz')
 run('codesign','--force','--deep','--sign','-',app)

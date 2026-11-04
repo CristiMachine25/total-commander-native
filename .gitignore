@@ -5,3 +5,6 @@ build-stage.txt
 .build/
 __pycache__/
 *.pyc
+
+SHA256SUMS.txt
+RELEASE-VERIFICATION.json
