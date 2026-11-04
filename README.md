@@ -2,7 +2,7 @@
 
 A native, keyboard-driven dual-pane file manager for **Apple Silicon · macOS 13+**. Browse your Mac folders and mounted volumes directly, with a classic Total Commander-style interface—no Wine or Windows runtime.
 
-**0.6.0 development build.** This is an independent reconstruction, not an official Ghisler release or a complete port. [Compatibility and remaining work →](analysis/remaining-parity-gaps.md)
+**0.7.0 development build.** This is an independent reconstruction, not an official Ghisler release or a complete port. [Compatibility and remaining work →](analysis/remaining-parity-gaps.md)
 
 [Download a build](https://github.com/CristiMachine25/total-commander-native/releases) · [Test results](TEST-RESULTS.md) · [Feature coverage](analysis/native-coverage.md)
 
@@ -64,7 +64,19 @@ This is one native horizontal bar. Windows `.bar` files, nested/vertical bars, D
 
 **Configuration → Options → Tabstops** controls file-size display: bytes, kilobytes, automatic units, or fixed MB/GB. Header/footer units can be chosen separately, with 1000- or 1024-byte bases.
 
-The app currently saves **52 settings** for layout, fonts, colors, icons, columns, tabs, viewing, quick search and more. Not every original setting is implemented; unsupported categories identify their missing options.
+The app currently saves **86 settings** for layout, fonts, colors, icons, columns, tabs, viewing, quick search and more. Not every original setting is implemented; unsupported categories identify their missing options.
+
+New working configuration pages include:
+
+- **Copy/Delete and Confirmation:** local copy/move destination and overwrite policies, metadata preservation, copy verification, buffer size, and Trash preference. Permanent deletion always confirms the actual files.
+- **Refresh:** activation refresh, optional local-folder monitoring, foreground-only operation and excluded paths. Metadata polling is opt-in, nonrecursive and runs off the UI thread.
+- **Packer / ZIP Packer:** compression level 0–9, integrity check after packing, newest-source timestamp and local archive browsing preference.
+- **FTP:** defaults for passive/active mode, connection/transfer timeouts and destination pane; existing sessions retain their settings.
+- **Folder Tabs:** local tab locking, optional close on double-click, close-other-tabs confirmation and lock markers.
+- **Color / Tabstops:** alternating Full/Brief rows, custom date/time separators and 12-hour display.
+- **Confirmation:** custom internal-command shortcuts and aliases, for example `Ctrl+Shift+B=cm_SrcShort` and `brief=cm_SrcShort`. Separate multiple definitions with semicolons. OS-reserved shortcuts remain under macOS control.
+
+[Copy/delete behavior](analysis/copy-delete-settings.md) · [Archive/FTP defaults](analysis/archive-ftp-settings.md) · [Refresh/display behavior](analysis/refresh-display-settings.md) · [Shortcut syntax](analysis/shortcut-settings.md)
 
 **Configuration → Change Settings Files Directly…** opens the native JSON editor. Export/import the complete native settings, or import a documented subset of `wincmd.ini`. Windows options that cannot be mapped are reported. Imports are staged for review before Apply and do not silently modify the source file. [Configuration-file format and supported INI keys →](analysis/configuration-files.md)
 

@@ -1,5 +1,14 @@
 # Native validation ledger
 
+## 0.7.0 configuration validation — 4 November 2026
+
+- The complete native backend/provider test script exited 0. Evidence: [full run](analysis/0.7-full-tests.log). This frozen snapshot preceded the final two tab corrections and per-pane refresh-cache correction.
+- Final correction suites passed separately: 22 tab assertions and 30 refresh/color assertions, including inactive-tab context closure, FTP tab double-click handling, and two panes independently catching up after a refresh was deferred.
+- Configuration import/export: 54 assertions; real settings dialog: 38; local transfer: 46; filesystem: 42; ZIP settings: 12; localhost FTP: 51; shortcut parser: 26; key events: 9; date formatting: 9. These counts describe their respective fixtures, not all original options.
+- Visible optimized-build checks used disposable folders: saved Keep both and verification defaults appeared in the F5 queue; copy preserved the existing destination and produced a byte-identical renamed copy; automatic refresh detected a file created outside the application; reopening the configuration preserved the choices.
+- The final corrected optimized binary passed the [application smoke](analysis/0.7-optimized-smoke.log). The mounted binary matched the tested stage by SHA-256. Copy defaults survived quit/relaunch. Original copy/refresh preferences and both pane locations were restored; the marked demo fixture was removed after independent byte comparison.
+- The native configuration now has 86 typed values. This release does not establish full Total Commander configuration or behavior parity. See [remaining requirements](analysis/remaining-parity-gaps.md).
+
 ## 0.6.0 button bar validation — 4 November 2026
 
 - 12 model assertions passed: defaults, persisted order/separators/labels/icon size, empty bars, malformed saved data, argument quoting and literal shell-like text, and invalid configuration rejection.

@@ -1,3 +1,11 @@
+# Current configuration status — 0.7
+
+The native configuration now contains 86 typed settings. This update adds working Copy/Delete, Confirmation, Refresh, FTP, Packer and ZIP Packer pages, plus keyboard/alias settings, local tab locking and tab controls, alternating row colors, custom date/time separators and 12-hour formatting. New behavior and precise boundaries are documented in [copy/delete](copy-delete-settings.md), [archive/FTP](archive-ftp-settings.md), [refresh/display](refresh-display-settings.md), [shortcuts](shortcut-settings.md), and [configuration files](configuration-files.md).
+
+Custom Columns, saved View Modes/Auto Switch rules, native plugin hosting and runtime language packs remain unimplemented. Other categories still have explicit unsupported original suboptions. The historical baseline below records the earlier 0.5 implementation and is not the current count.
+
+---
+
 # Native configuration coverage
 
 This is a native macOS settings implementation informed by the shipped Total Commander help. It is not a recovered original configuration dialog and does not implement every original option. Version 0.5 adds complete native JSON configuration exchange and a documented partial `wincmd.ini` importer; it does not implement full original INI roundtrip or redirection semantics.
