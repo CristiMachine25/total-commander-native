@@ -13,6 +13,9 @@ def run(*args): subprocess.run([str(a) for a in args],cwd=base,check=True)
 for name in ['README.md','TEST-RESULTS.md','THIRD-PARTY.txt']:
     shutil.copy2(base/name,res/name)
 shutil.copytree(base/'analysis',res/'analysis',dirs_exist_ok=True)
+if (base/'docs').exists():
+    shutil.copytree(base/'docs',res/'docs',dirs_exist_ok=True)
+    shutil.copytree(base/'docs',stage/'docs',dirs_exist_ok=True)
 shutil.copy2(base/'README.md',stage/'README.md')
 run('codesign','--force','--deep','--sign','-',app)
 run('codesign','--verify','--deep','--strict',app)

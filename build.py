@@ -21,7 +21,10 @@ shutil.copy2(base/'Resources/TotalCommander.icns',res/'TotalCommander.icns')
 for name in ['README.md','TEST-RESULTS.md','THIRD-PARTY.txt']:
  if (base/name).exists(): shutil.copy2(base/name,res/name)
 shutil.copytree(base/'analysis',res/'analysis')
-info=dict(CFBundleName='Total Commander Native',CFBundleIconFile='TotalCommander',CFBundleDisplayName='Total Commander Native',CFBundleIdentifier='local.totalcommander.native',CFBundleExecutable='NativeCommander',CFBundlePackageType='APPL',CFBundleShortVersionString='0.5.0',CFBundleVersion='5',LSMinimumSystemVersion='13.0',NSHighResolutionCapable=True,NSPrincipalClass='NSApplication')
+if (base/'docs').exists():
+ shutil.copytree(base/'docs',res/'docs')
+ shutil.copytree(base/'docs',stage/'docs')
+info=dict(CFBundleName='Total Commander Native',CFBundleIconFile='TotalCommander',CFBundleDisplayName='Total Commander Native',CFBundleIdentifier='local.totalcommander.native',CFBundleExecutable='NativeCommander',CFBundlePackageType='APPL',CFBundleShortVersionString='0.5.1',CFBundleVersion='6',LSMinimumSystemVersion='13.0',NSHighResolutionCapable=True,NSPrincipalClass='NSApplication')
 (app/'Contents/Info.plist').write_bytes(plistlib.dumps(info))
 run('codesign','--force','--sign','-',res/'7zz')
 run('codesign','--force','--deep','--sign','-',app)
