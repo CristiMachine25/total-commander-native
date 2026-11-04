@@ -34,6 +34,12 @@ final class CommanderTable: NSTableView {
         if keyHandler?(event) == true { return }
         super.keyDown(with: event)
     }
+    override func performKeyEquivalent(with event:NSEvent)->Bool {
+        let modifiers=event.modifierFlags.intersection([.control,.shift,.option,.command])
+        if window?.firstResponder === self,event.keyCode==48,
+           modifiers == [.control] || modifiers == [.control,.shift],keyHandler?(event)==true {return true}
+        return super.performKeyEquivalent(with:event)
+    }
 }
 
 final class BlueRow: NSTableRowView {
@@ -44,7 +50,7 @@ final class BlueRow: NSTableRowView {
 }
 
 final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
-    let view = NSView()
+    let view = CommanderAppearanceView()
     let table = CommanderTable()
     private let fileScroll=NSScrollView()
     private let briefScroll=NSScrollView()
@@ -83,6 +89,7 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
     private let systemIcons:NSCache<NSURL,NSImage>={let cache=NSCache<NSURL,NSImage>();cache.countLimit=512;return cache}()
     var marked = Set<URL>()
     var onSelectionChanged: (() -> Void)?
+    var onManualViewChange:(()->Void)?
     private var normalContent: NSView?
     private(set) var quickViewOverlay: NSView?
     var onActivate: (() -> Void)?
@@ -246,13 +253,14 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
         let refilter=firstApply || next.ignoreListEnabled != previous.ignoreListEnabled || next.ignorePatterns != previous.ignorePatterns
         let resort=refilter || next.directoriesFirst != previous.directoriesFirst || next.caseSensitiveSort != previous.caseSensitiveSort || next.customColumnSets != previous.customColumnSets || next.activeCustomColumnSetID != previous.activeCustomColumnSetID
         configuration=next;configurationApplied=true
+        view.appearanceDidChange={ [weak self] in self?.refreshAppearanceRendering() }
         let base=NSFont(name:configuration.fileFontName,size:configuration.fileFontSize) ?? NSFont.systemFont(ofSize:configuration.fileFontSize)
         cachedFont=configuration.fileFontBold ? NSFontManager.shared.convert(base,toHaveTrait:.boldFontMask):base
         footer.isHidden = !configuration.showStatusBar
         driveRowView?.isHidden = !configuration.showDriveList;path.isHidden = viewMode == .tree || !configuration.showCurrentDirectory
         table.headerView=configuration.showColumnHeaders ? storedHeader:nil
-        table.rowHeight=max(configuration.rowHeight,Double(configuration.iconSize+4));table.backgroundColor=configuration.background.nsColor
-        fileScroll.backgroundColor=configuration.background.nsColor;briefScroll.backgroundColor=configuration.background.nsColor
+        table.rowHeight=max(configuration.rowHeight,Double(configuration.iconSize+4));table.backgroundColor=renderingPalette.background.nsColor
+        fileScroll.backgroundColor=renderingPalette.background.nsColor;briefScroll.backgroundColor=renderingPalette.background.nsColor
         for column in table.tableColumns {
             let key=column.identifier.rawValue;column.isHidden = !configuration.visibleColumns.contains(key) || (key == "ext" && configuration.extensionStyle == .afterName)
             column.width=configuration.columnWidths[key] ?? column.width
@@ -274,6 +282,19 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
         }
         briefGrid.updateGeometry();updateDriveHeading();updateFooter()
     }
+    func refreshAppearanceRendering() {
+        guard configurationApplied else{return}
+        let palette=renderingPalette
+        table.backgroundColor=palette.background.nsColor;fileScroll.backgroundColor=palette.background.nsColor;briefScroll.backgroundColor=palette.background.nsColor;thumbnailScroll.backgroundColor=palette.background.nsColor
+        let dark=AppearanceSettings.isDark(configuration.appearanceMode,appearance:view.effectiveAppearance)
+        let chrome=dark ? NSColor(srgbRed:0.10,green:0.10,blue:0.12,alpha:1):navy
+        view.layer?.backgroundColor=chrome.cgColor
+        if configuration.appearanceMode == .system {view.window?.backgroundColor=chrome;view.window?.contentView?.layer?.backgroundColor=chrome.cgColor}
+        let selection=table.selectedRowIndexes;table.reloadData();table.selectRowIndexes(selection,byExtendingSelection:false)
+        footer.textColor=summaryTextColor;updateAppearance()
+        (view.window?.delegate as? CommanderController)?.refreshChromeLabelColors()
+        briefGrid.needsDisplay=true;thumbnailGrid.needsDisplay=true;directoryTree.refreshAppearanceRendering();decorateNamedViewTab()
+    }
     var configuredFont:NSFont {cachedFont}
     func systemIcon(for entry:FileEntry)->NSImage {
         let key=entry.url as NSURL
@@ -281,8 +302,8 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
         let icon=NSWorkspace.shared.icon(forFile:entry.url.path)
         systemIcons.setObject(icon,forKey:key);return icon
     }
-    func itemBackground(row:Int)->NSColor {configuration.alternatingRowBackground && row%2 == 1 ? configuration.alternatingBackground.nsColor:configuration.background.nsColor}
-    func itemColor(marked:Bool,selected:Bool)->NSColor {selected ? configuration.selectionForeground.nsColor:(marked ? configuration.markedForeground.nsColor:configuration.foreground.nsColor)}
+    func itemBackground(row:Int)->NSColor {configuration.alternatingRowBackground && row%2 == 1 ? renderingPalette.alternatingBackground.nsColor:renderingPalette.background.nsColor}
+    func itemColor(marked:Bool,selected:Bool)->NSColor {selected ? renderingPalette.selectionForeground.nsColor:(marked ? renderingPalette.markedForeground.nsColor:renderingPalette.foreground.nsColor)}
     func showQuickView(_ overlay:NSView) {
         quickViewOverlay?.removeFromSuperview()
         normalContent?.isHidden=true
@@ -313,7 +334,7 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
     func tableView(_ tableView: NSTableView, rowViewForRow row: Int) -> NSTableRowView? {
         let identifier=NSUserInterfaceItemIdentifier("pane.row")
         let view=(tableView.makeView(withIdentifier:identifier,owner:self) as? PaneSelectionRow) ?? PaneSelectionRow()
-        view.identifier=identifier;view.selectionColor=configuration.selectionBackground.nsColor;view.backgroundColor=itemBackground(row:row);return view
+        view.identifier=identifier;view.selectionColor=renderingPalette.selectionBackground.nsColor;view.backgroundColor=itemBackground(row:row);return view
     }
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
         guard row >= 0, row <= entries.count else { return nil }
@@ -368,6 +389,7 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
     func tableView(_ tableView: NSTableView, didClick tableColumn: NSTableColumn) {
         let column = tableColumn.identifier.rawValue
         if sortColumn == column { ascending.toggle() } else { sortColumn = column; ascending = true }
+        onManualViewChange?()
         let selected = Set(table.selectedRowIndexes.compactMap { row in row > 0 && row <= entries.count ? entries[row-1].url : nil })
         sortEntries(); table.reloadData()
         let rows = IndexSet(entries.enumerated().compactMap { selected.contains($0.element.url) ? $0.offset + 1 : nil })
@@ -471,7 +493,8 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
         view.layer?.borderWidth = 1
         path.backgroundColor = active ? NSColor(srgbRed: 0.22, green: 0.55, blue: 0.94, alpha: 1) : NSColor.gray
         path.textColor = .white
-        heading.textColor = active ? NSColor.black : NSColor.darkGray
+        heading.textColor = driveHeadingTextColor
+        footer.textColor = summaryTextColor
         table.needsDisplay = true;briefGrid.needsDisplay=true;thumbnailGrid.needsDisplay=true
     }
 }
@@ -582,6 +605,7 @@ class CommanderController: NSObject, NSWindowDelegate, NSUserInterfaceValidation
             pane.tabControl.contextMenu = { [weak self,weak pane] index in guard let pane else{return nil};return self?.tabContextMenu(index,pane:pane) }
             pane.onOpen = { [weak self] in self?.openCurrent() }
             pane.onSelectionChanged = { [weak self] in self?.updateQuickView() }
+            pane.onManualViewChange={ [weak self,weak pane] in guard let self,let pane else{return};self.recordManualViewChange(in:pane) }
             pane.onLocal = { [weak self,weak pane] url in guard let pane else{return};self?.navigate(url,pane:pane) }
             pane.onPath = { [weak self] text in self?.go(text) }
             pane.onKey = { [weak self] event in self?.handleKey(event) ?? false }
@@ -604,6 +628,7 @@ class CommanderController: NSObject, NSWindowDelegate, NSUserInterfaceValidation
             guard let self = self, event.window === self.window, self.window.attachedSheet == nil else { return event }
             if self.handleFieldEscape(event) {return nil}
             if self.handleCustomShortcut(event) {return nil}
+            if self.handlePaneTabShortcut(event) {return nil}
             let functionKeys: Set<UInt16> = [122,120,99,118,96,97,98,100,101,109]
             if functionKeys.contains(event.keyCode), self.handleKey(event) { return nil }
             return event

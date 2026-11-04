@@ -6,6 +6,9 @@ extension CommanderController {
     func dispatchInternalCommand(_ raw: String) -> Bool {
         if let id=displaySettingsCommandID(raw) {return routeReferenceCommand(id)}
         switch raw.lowercased() {
+        case "cm_switchdarkmode":return routeReferenceCommand(2950)
+        case "cm_enabledarkmode":return routeReferenceCommand(2951)
+        case "cm_disabledarkmode":return routeReferenceCommand(2952)
         case "cm_srcshort": briefView()
         case "cm_srclong": fullView()
         case "cm_srctree": treeView()

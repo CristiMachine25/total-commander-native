@@ -10,7 +10,7 @@ private struct ConfigurationPage {
         .init(title:"Display",missing:"DOS 8.3 filenames, Windows system attributes, file comments and plugin tooltips."),
         .init(title:"Icons",missing:"Windows EXE/LNK extraction, shell overlays and per-resolution icon profiles."),
         .init(title:"Font",missing:"Per-resolution font profiles, dialog DPI scaling and separate main-window/dialog fonts."),
-        .init(title:"Color",missing:"File-type color rules and separate dark-mode palettes."),
+        .init(title:"Color",missing:"File-type color rules, inverted outline cursors and Windows control-border palettes."),
         .init(title:"Tabstops",missing:"Independent progress-dialog units."),
         .init(title:"Custom Columns",missing:"Windows content-plugin fields, per-filesystem-plugin column sets, and original dialog-unit sizing."),
         .init(title:"View Modes",missing:"Windows tab-icon files and plugin-dependent commands."),
@@ -29,7 +29,8 @@ private struct ConfigurationPage {
         .init(title:"ZIP Packer",missing:"Encryption, multi-volume ZIP and external ZIP implementations. Compression settings apply to new ZIP creation."),
         .init(title:"Plugins",missing:"Windows WCX/WFX/WLX/WDX plugin loading on native macOS."),
         .init(title:"Language",missing:"Runtime language-pack selection and localized native dialogs."),
-        .init(title:"Ignore List",missing:"Recursive copy/move/synchronize exclusion, absolute paths, FTP/plugin prefixes and tcignore.txt import/export. This control currently filters the visible list only.")
+        .init(title:"Ignore List",missing:"Recursive copy/move/synchronize exclusion, absolute paths, FTP/plugin prefixes and tcignore.txt import/export. This control currently filters the visible list only."),
+        .init(title:"Keybindings",missing:"External commands, alias chains, and OS-reserved shortcut interception.")
     ]
 }
 
@@ -46,7 +47,7 @@ final class PreferencesController:NSWindowController,NSWindowDelegate,NSTableVie
     init(_ commander:CommanderController) {
         self.commander=commander;baseline=commander.runtimeConfig;draft=commander.runtimeConfig;draft.showHidden=commander.showHidden
         let window=NSWindow(contentRect:NSRect(x:0,y:0,width:920,height:650),styleMask:[.titled,.closable,.resizable],backing:.buffered,defer:false)
-        window.title="Configuration";window.isReleasedWhenClosed=false;window.minSize=NSSize(width:820,height:540);window.appearance=NSAppearance(named:.aqua)
+        window.title="Configuration";window.isReleasedWhenClosed=false;window.minSize=NSSize(width:820,height:540);window.appearance=AppearanceSettings.appearance(commander.runtimeConfig.appearanceMode)
         super.init(window:window);window.delegate=self
         let column=NSTableColumn(identifier:.init("category"));column.title="Category";column.width=175;categories.addTableColumn(column)
         categories.headerView=nil;categories.dataSource=self;categories.delegate=self;categories.rowHeight=27;categories.allowsEmptySelection=false
@@ -134,7 +135,10 @@ final class PreferencesController:NSWindowController,NSWindowDelegate,NSTableVie
         case "Display":checkbox("Show hidden files",\.showHidden);checkbox("Directories before files",\.directoriesFirst);checkbox("Case-sensitive name sorting",\.caseSensitiveSort)
         case "Icons":choice("Show icons to the left of the filename",\.iconMode,[("All associated (macOS)",.system),("Only standard icons",.standard),("No icons",.none)]);integer("Icon size",\.iconSize,12...48)
         case "Font":text("File list font",\.fileFontName);number("Font size",\.fileFontSize,9...36);checkbox("Bold",\.fileFontBold);number("File row height",\.rowHeight,16...64)
-        case "Color":color("Font color",\.foreground);color("Background",\.background);color("Mark color",\.markedForeground);color("Cursor color",\.selectionBackground);color("Cursor font",\.selectionForeground);checkbox("Use alternating row backgrounds",\.alternatingRowBackground);color("Alternate row background",\.alternatingBackground)
+        case "Color":
+            choice("Appearance",\.appearanceMode,[("Normal",.light),("Dark",.dark),("Follow macOS",.system)])
+            color("Dark font color",\.darkPalette.foreground);color("Dark background",\.darkPalette.background);color("Dark mark color",\.darkPalette.markedForeground);color("Dark cursor color",\.darkPalette.selectionBackground);color("Dark cursor font",\.darkPalette.selectionForeground);color("Dark alternate background",\.darkPalette.alternatingBackground)
+            color("Font color",\.foreground);color("Background",\.background);color("Mark color",\.markedForeground);color("Cursor color",\.selectionBackground);color("Cursor font",\.selectionForeground);checkbox("Use alternating row backgrounds",\.alternatingRowBackground);color("Alternate row background",\.alternatingBackground)
         case "Tabstops":
             choice("Show file extensions",\.extensionStyle,[("Aligned (with TAB)",.aligned),("Directly after filename",.afterName)])
             for (key,title) in [("name","Name"),("ext","Extension"),("size","Size"),("date","Date/time"),("attr","Attributes")]{
@@ -175,7 +179,7 @@ final class PreferencesController:NSWindowController,NSWindowDelegate,NSTableVie
             let editor=DisplaySettingsEditors.rules(draft.autoSwitchRules,modes:{[weak self] in self?.draft.viewModes ?? []})
             page.addArrangedSubview(editor)
             readers.append{[weak self,weak editor] in guard let self,let editor else{return};self.draft.autoSwitchRules=try editor.values()}
-        case "Folder Tabs":checkbox("Show tab header also when there is only one tab",\.tabsAlwaysVisible);integer("Limit tab length to characters",\.tabTitleMaximum,8...100);checkbox("Open new tabs near current tab",\.newTabBesideCurrent);checkbox("Close tab on double-click",\.tabsCloseOnDoubleClick);checkbox("Confirm closing all other tabs",\.confirmCloseAllTabs);checkbox("Show asterisk on locked tabs",\.tabsShowLockAsterisk)
+        case "Folder Tabs":checkbox("Show tab header also when there is only one tab",\.tabsAlwaysVisible);integer("Limit tab length to characters",\.tabTitleMaximum,8...100);checkbox("Open new tabs near current tab",\.newTabBesideCurrent);checkbox("Close tab on double-click",\.tabsCloseOnDoubleClick);checkbox("Confirm closing all other tabs",\.confirmCloseAllTabs);checkbox("Show asterisk on locked tabs",\.tabsShowLockAsterisk);checkbox("Remember view settings separately for each tab",\.tabsRememberViewSettings);checkbox("Remember displayed file types separately for each tab",\.tabsRememberFileFilters)
         case "Thumbnails":integer("Thumbnail size (pixels)",\.thumbnailSize,64...256)
         case "Operation":checkbox("Save directory/tabs on exit",\.saveOnExit);checkbox("Open files/directories with a single click",\.singleClickOpen);checkbox("Select directories with Select All",\.selectionIncludesDirectories)
         case "Edit/View":checkbox("Use external viewer for F3",\.externalViewerEnabled);application("External viewer application",\.externalViewerPath);checkbox("Use external editor for F4",\.externalEditorEnabled);application("External editor application",\.externalEditorPath);text("Internal viewer font",\.viewerFontName);number("Internal viewer font size",\.viewerFontSize,9...36);checkbox("Wrap internal viewer text to window",\.viewerWordWrap)
@@ -183,8 +187,11 @@ final class PreferencesController:NSWindowController,NSWindowDelegate,NSTableVie
             checkbox("Confirm local copy/move destination",\.confirmCopyMove)
             checkbox("Confirm replacement of existing local files",\.confirmOverwrite)
             checkbox("Confirm moving local files to Trash",\.confirmDelete)
-            text("Shortcuts (Ctrl+Shift+C=cm_CopyFullNamesToClip)",\.customShortcuts)
-            text("Aliases (full=cm_SrcLong; brief=cm_SrcShort)",\.commandAliases)
+        case "Keybindings":
+            let editor=KeybindingsEditor(shortcuts:draft.customShortcuts)
+            page.addArrangedSubview(editor)
+            readers.append{[weak self,weak editor] in guard let self,let editor else{return};self.draft.customShortcuts=try editor.serializedBindings()}
+            text("Command aliases (full=cm_SrcLong)",\.commandAliases)
         case "Copy/Delete":
             choice("Existing local destination",\.copyDefaultCollision,[("Ask", "ask"),("Skip existing", "skip"),("Replace existing", "replace"),("Keep both (rename)", "rename")])
             checkbox("Preserve file timestamps",\.copyPreserveFileDates)
@@ -264,3 +271,5 @@ extension CommanderController {
     func openPreferences(page:Int) {configuration();preferencesWindow?.selectPage(index:page)}
     func applyAppearancePreferences(){applyConfiguration(remember ? CommanderConfiguration.load() : runtimeConfig)}
 }
+
+func refreshPreferencesAppearance(_ mode:CommanderAppearanceMode){preferencesWindow?.window?.appearance=AppearanceSettings.appearance(mode)}

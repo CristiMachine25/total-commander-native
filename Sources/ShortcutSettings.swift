@@ -38,6 +38,7 @@ struct ShortcutSettings {
     // Explicit dispatch-capability snapshot. Unknown original commands are rejected,
     // not accepted as placeholders or treated as shell commands.
     static let supportedCommands:Set<String>=Set("""
+cm_switchdarkmode cm_enabledarkmode cm_disabledarkmode
 cm_srccustomviewmenu cm_srcviewmodelist cm_customcolumnconfig cm_customcolumndlg cm_configviewmodes cm_configviewmodeswitch cm_toggleautoviewmodeswitch
 cm_about cm_buttonconfig cm_clearall cm_closealltabs cm_closecurrenttab
 cm_combine cm_comparedirs cm_comparefilesbycontent cm_config cm_configchangeinifiles

@@ -128,7 +128,7 @@ struct ReferenceMenuCatalog {
 /// original ID has a genuine native route; unknown IDs remain visible but disabled.
 enum ReferenceCommandRouting {
     static let supportedIDs:Set<Int> = [
-        270,333,483,2920,2939,2940,2947,8500,8501,8502,8503,8504,8505,8506,8507,8508,8509,271,272,273,274,275,276,277,278,279,3200,3201,3202,269,301,302,303,304,305,311,312,313,314,321,322,323,324,325,330,493,552,2023,2031,2032,2036,2037,
+        2950,2951,2952,270,333,483,2920,2939,2940,2947,8500,8501,8502,8503,8504,8505,8506,8507,8508,8509,271,272,273,274,275,276,277,278,279,3200,3201,3202,269,301,302,303,304,305,311,312,313,314,321,322,323,324,325,330,493,552,2023,2031,2032,2036,2037,
         498,571,560,561,490,501,503,508,509,510,518,521,522,523,524,525,526,527,529,530,531,532,533,
         540,550,551,553,564,565,570,580,581,620,640,690,2017,2018,2020,2022,2121,2400,3001,24340
     ]
@@ -191,7 +191,7 @@ extension CommanderController: NSMenuDelegate {
         if (271...299).contains(id),!runtimeConfig.customColumnSets.indices.contains(id-271) {return false}
         if (8501...8749).contains(id),!runtimeConfig.viewModes.filter({$0.id != "default"}).indices.contains(id-8501) {return false}
         let displayModeCommand=(271...299).contains(id) || (8500...8749).contains(id)
-        if (activePane.isTreeMode || separateTrees.hasFocus) && !displayModeCommand && ![270,333,483,2920,2939,2940,2947,8500,3200,3201,3202,269,301,302,303,305,490,493,498,540,580,581,620,640,690,24340].contains(id){return false}
+        if (activePane.isTreeMode || separateTrees.hasFocus) && !displayModeCommand && ![2950,2951,2952,270,333,483,2920,2939,2940,2947,8500,3200,3201,3202,269,301,302,303,305,490,493,498,540,580,581,620,640,690,24340].contains(id){return false}
         if ReferenceCommandRouting.localOnlyIDs.contains(id),activePane.location.localDirectory==nil{return false}
         if id==2020,otherPane.location.localDirectory==nil{return false}
         if ReferenceCommandRouting.selectedIDs.contains(id),activePane.selectedEntries.isEmpty{return false}
@@ -204,6 +204,9 @@ extension CommanderController: NSMenuDelegate {
         guard referenceCommandEnabled(id) else{return false}
         if routeDisplaySettingsCommand(id) {return true}
         switch id {
+        case 2950:toggleCommanderAppearance()
+        case 2951:runtimeConfig.appearanceMode = .dark;applyConfiguration(runtimeConfig);if remember {try? runtimeConfig.save()}
+        case 2952:runtimeConfig.appearanceMode = .light;applyConfiguration(runtimeConfig);if remember {try? runtimeConfig.save()}
         case 301:briefView()
         case 302:fullView()
         case 3200,3201,3202:separateTrees.setState(id-3200)
