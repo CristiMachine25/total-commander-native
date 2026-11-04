@@ -112,14 +112,33 @@ struct CommanderConfiguration:Codable,Equatable {
     var autoSwitchRules:[CommanderAutoSwitchRule] = []
     var autoSwitchEnabled:Bool = false
     var autoSwitchRestoreDefault:Bool = true
+    var directoryBrackets:Bool = true
+    var directoryTrailingSlash:Bool = false
+    var showDirectoryCount:Bool = false
+    var directoriesAlwaysByName:Bool = false
+    var briefColumnWidthLimit:Int = 0
+    var sortMethod:CommanderSortMethod = .naturalAlphabetical
+    var historySaveOnExit:Bool = false
+    var historyMaximumShown:Int = 100
+    var historyShowIcons:Bool = false
     var tabsRememberViewSettings:Bool = true
     var tabsRememberFileFilters:Bool = true
     var appearanceMode:CommanderAppearanceMode = .light
     var darkPalette:CommanderDarkPalette = .init()
     init() {}
-    enum CodingKeys:String,CodingKey {case tabsRememberViewSettings,tabsRememberFileFilters,appearanceMode,darkPalette,customColumnSets,activeCustomColumnSetID,viewModes,autoSwitchRules,autoSwitchEnabled,autoSwitchRestoreDefault,tabsCloseOnDoubleClick,confirmCloseAllTabs,tabsShowLockAsterisk,customShortcuts,commandAliases,alternatingRowBackground,alternatingBackground,copyPreserveDirectoryDates,copyPreserveFileDates,copyPreservePermissions,copyVerifyAfterCopy,copyBufferSizeKB,copyDefaultCollision,confirmCopyMove,confirmOverwrite,deleteToTrash,confirmDelete,refreshOnActivate,autoRefreshEnabled,autoRefreshMetadata,autoRefreshOnlyForeground,autoRefreshExcludedPaths,autoRefreshUpdateHeader,dateSeparator,timeSeparator,use12HourTime,zipCompressionLevel,zipVerifyAfterPacking,archiveSetDateToNewest,browseArchivesAsDirectories,ftpPassiveMode,ftpConnectTimeout,ftpTransferTimeout,ftpOpenPanel,showButtonBar,showDriveList,showFolderTabs,showCurrentDirectory,showColumnHeaders,showStatusBar,showCommandLine,showFunctionButtons,verticalArrangement,showHidden,directoriesFirst,caseSensitiveSort,iconMode,iconSize,fileFontName,fileFontSize,fileFontBold,rowHeight,foreground,background,markedForeground,selectionBackground,selectionForeground,visibleColumns,columnWidths,extensionStyle,sizeFormat,useDecimalUnits,footerSizeFormat,ignoreListEnabled,ignorePatterns,quickSearchMode,quickSearchMatchBeginning,quickSearchMatchEnding,dateOrder,showSeconds,showCentury,tabsAlwaysVisible,tabTitleMaximum,newTabBesideCurrent,saveOnExit,singleClickOpen,selectionIncludesDirectories,historyLimit,externalEditorEnabled,externalEditorPath,externalViewerEnabled,externalViewerPath,thumbnailSize,viewerWordWrap,viewerFontName,viewerFontSize}
+    enum CodingKeys:String,CodingKey {case directoryBrackets,directoryTrailingSlash,showDirectoryCount,directoriesAlwaysByName,briefColumnWidthLimit,sortMethod,historySaveOnExit,historyMaximumShown,historyShowIcons,tabsRememberViewSettings,tabsRememberFileFilters,appearanceMode,darkPalette,customColumnSets,activeCustomColumnSetID,viewModes,autoSwitchRules,autoSwitchEnabled,autoSwitchRestoreDefault,tabsCloseOnDoubleClick,confirmCloseAllTabs,tabsShowLockAsterisk,customShortcuts,commandAliases,alternatingRowBackground,alternatingBackground,copyPreserveDirectoryDates,copyPreserveFileDates,copyPreservePermissions,copyVerifyAfterCopy,copyBufferSizeKB,copyDefaultCollision,confirmCopyMove,confirmOverwrite,deleteToTrash,confirmDelete,refreshOnActivate,autoRefreshEnabled,autoRefreshMetadata,autoRefreshOnlyForeground,autoRefreshExcludedPaths,autoRefreshUpdateHeader,dateSeparator,timeSeparator,use12HourTime,zipCompressionLevel,zipVerifyAfterPacking,archiveSetDateToNewest,browseArchivesAsDirectories,ftpPassiveMode,ftpConnectTimeout,ftpTransferTimeout,ftpOpenPanel,showButtonBar,showDriveList,showFolderTabs,showCurrentDirectory,showColumnHeaders,showStatusBar,showCommandLine,showFunctionButtons,verticalArrangement,showHidden,directoriesFirst,caseSensitiveSort,iconMode,iconSize,fileFontName,fileFontSize,fileFontBold,rowHeight,foreground,background,markedForeground,selectionBackground,selectionForeground,visibleColumns,columnWidths,extensionStyle,sizeFormat,useDecimalUnits,footerSizeFormat,ignoreListEnabled,ignorePatterns,quickSearchMode,quickSearchMatchBeginning,quickSearchMatchEnding,dateOrder,showSeconds,showCentury,tabsAlwaysVisible,tabTitleMaximum,newTabBesideCurrent,saveOnExit,singleClickOpen,selectionIncludesDirectories,historyLimit,externalEditorEnabled,externalEditorPath,externalViewerEnabled,externalViewerPath,thumbnailSize,viewerWordWrap,viewerFontName,viewerFontSize}
     init(from decoder:Decoder)throws {
         let values=try decoder.container(keyedBy:CodingKeys.self)
+        directoryBrackets=(try? values.decode(Bool.self,forKey:.directoryBrackets)) ?? true
+        directoryTrailingSlash=(try? values.decode(Bool.self,forKey:.directoryTrailingSlash)) ?? false
+        showDirectoryCount=(try? values.decode(Bool.self,forKey:.showDirectoryCount)) ?? false
+        directoriesAlwaysByName=(try? values.decode(Bool.self,forKey:.directoriesAlwaysByName)) ?? false
+        briefColumnWidthLimit=(try? values.decode(Int.self,forKey:.briefColumnWidthLimit)) ?? 0
+        sortMethod=(try? values.decode(CommanderSortMethod.self,forKey:.sortMethod)) ?? .naturalAlphabetical
+        historySaveOnExit=(try? values.decode(Bool.self,forKey:.historySaveOnExit)) ?? false
+        historyMaximumShown=(try? values.decode(Int.self,forKey:.historyMaximumShown)) ?? 100
+        historyShowIcons=(try? values.decode(Bool.self,forKey:.historyShowIcons)) ?? false
+
         tabsRememberViewSettings=(try? values.decode(Bool.self,forKey:.tabsRememberViewSettings)) ?? true
         tabsRememberFileFilters=(try? values.decode(Bool.self,forKey:.tabsRememberFileFilters)) ?? true
         appearanceMode=(try? values.decode(CommanderAppearanceMode.self,forKey:.appearanceMode)) ?? .light
@@ -227,6 +246,7 @@ struct CommanderConfiguration:Codable,Equatable {
         c.viewerFontSize=number(c.viewerFontSize,9...36,12);if c.viewerFontName.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty{c.viewerFontName="Menlo"}
         c.fileFontSize=number(c.fileFontSize,9...36,13);c.rowHeight=number(c.rowHeight,16...64,21)
         c.iconSize=min(48,max(12,c.iconSize));c.thumbnailSize=min(256,max(64,c.thumbnailSize))
+        c.briefColumnWidthLimit=min(1200,max(0,c.briefColumnWidthLimit));c.historyMaximumShown=min(200,max(1,c.historyMaximumShown))
         c.tabTitleMaximum=min(100,max(8,c.tabTitleMaximum));c.historyLimit=min(200,max(1,c.historyLimit))
         c.foreground=c.foreground.normalized;c.background=c.background.normalized;c.markedForeground=c.markedForeground.normalized;c.selectionBackground=c.selectionBackground.normalized;c.selectionForeground=c.selectionForeground.normalized
         let allowed=["name","ext","size","date","attr"]

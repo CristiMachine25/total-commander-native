@@ -26,8 +26,8 @@ import Darwin
         try rejects(Data(),"Empty rejected")
         try rejects(Data(repeating:65,count:ConfigurationFiles.maximumBytes+1),"Oversized rejected")
         try rejects(Data("not json".utf8),"Malformed rejected")
-        try rejects(Data(String(decoding:data,as:UTF8.self).replacingOccurrences(of:"\"version\" : 4",with:"\"version\" : 4, \"version\" : 4").utf8),"Duplicate JSON keys rejected")
-        try rejects(changed{$0["version"]=5},"Future version rejected")
+        try rejects(Data(String(decoding:data,as:UTF8.self).replacingOccurrences(of:"\"version\" : 5",with:"\"version\" : 5, \"version\" : 5").utf8),"Duplicate JSON keys rejected")
+        try rejects(changed{$0["version"]=6},"Future version rejected")
         try rejects(changed{$0["version"]=true},"Boolean version rejected")
         try rejects(changed{$0["format"]="other"},"Wrong format rejected")
         try rejects(changed{$0["extra"]=true},"Unknown envelope rejected")
@@ -108,15 +108,21 @@ import Darwin
         for rejected in [fifo,root,huge] {
             do{_=try ConfigurationFiles.readData(from:rejected);throw NSError(domain:"TestFailure",code:1)}catch let e as NSError{if e.domain=="TestFailure"{throw e};count+=1}
         }
+        var version4=object;version4["version"]=4
+        var v4Fields=version4["configuration"] as! [String:Any]
+        for key in ConfigurationFiles.version5Keys {v4Fields.removeValue(forKey:key)}
+        version4["configuration"]=v4Fields
+        let migratedV4=try ConfigurationFiles.importNative(JSONSerialization.data(withJSONObject:version4))
+        try check(migratedV4.directoryBrackets && !migratedV4.historySaveOnExit && migratedV4.sortMethod == .naturalAlphabetical,"Version 4 keeps baseline display and history defaults")
         var version3=object;version3["version"]=3
         var v3Fields=version3["configuration"] as! [String:Any]
-        for key in ConfigurationFiles.version4Keys {v3Fields.removeValue(forKey:key)}
+        for key in ConfigurationFiles.version4Keys.union(ConfigurationFiles.version5Keys) {v3Fields.removeValue(forKey:key)}
         version3["configuration"]=v3Fields
         let migrated3=try ConfigurationFiles.importNative(JSONSerialization.data(withJSONObject:version3))
         try check(migrated3==configuration,"Version 3 migrates appearance and tab defaults without altering existing preferences")
         var version2=object;version2["version"]=2
         var previousFields=version2["configuration"] as! [String:Any]
-        for key in ConfigurationFiles.version3Keys.union(ConfigurationFiles.version4Keys) {previousFields.removeValue(forKey:key)}
+        for key in ConfigurationFiles.version3Keys.union(ConfigurationFiles.version4Keys).union(ConfigurationFiles.version5Keys) {previousFields.removeValue(forKey:key)}
         version2["configuration"]=previousFields
         let migrated2=try ConfigurationFiles.importNative(JSONSerialization.data(withJSONObject:version2))
         try check(migrated2==configuration,"Version 2 migrates with empty display profiles and preserves existing settings")
@@ -124,7 +130,7 @@ import Darwin
         try rejects(JSONSerialization.data(withJSONObject:version2),"Version 2 missing existing settings rejected")
         var version1=object;version1["version"]=1
         var legacyFields=version1["configuration"] as! [String:Any]
-        for key in ConfigurationFiles.version2Keys.union(ConfigurationFiles.version3Keys).union(ConfigurationFiles.version4Keys) {legacyFields.removeValue(forKey:key)}
+        for key in ConfigurationFiles.version2Keys.union(ConfigurationFiles.version3Keys).union(ConfigurationFiles.version4Keys).union(ConfigurationFiles.version5Keys) {legacyFields.removeValue(forKey:key)}
         version1["configuration"]=legacyFields
         let migrated=try ConfigurationFiles.importNative(JSONSerialization.data(withJSONObject:version1))
         try check(migrated.sizeFormat == configuration.sizeFormat && migrated.copyVerifyAfterCopy==false && migrated.zipCompressionLevel==6,"Version 1 exports migrate with new defaults and retain existing fields")
@@ -141,6 +147,13 @@ import Darwin
         try rejects(changed{o in var fields=o["configuration"] as! [String:Any];fields["copyBufferSizeKB"]=1;o["configuration"]=fields},"Copy buffer bounds enforced on JSON import")
         try rejects(changed{o in var fields=o["configuration"] as! [String:Any];fields["zipCompressionLevel"]=10;o["configuration"]=fields},"ZIP compression bounds enforced on import")
         try rejects(changed{o in var fields=o["configuration"] as! [String:Any];fields["customShortcuts"]="bad-binding";o["configuration"]=fields},"Invalid hotkey syntax cannot enter through JSON")
+        var policies=configuration;policies.directoryBrackets=false;policies.directoryTrailingSlash=true;policies.showDirectoryCount=true;policies.directoriesAlwaysByName=true;policies.sortMethod = .naturalCharacterCode;policies.briefColumnWidthLimit=180;policies.historySaveOnExit=true;policies.historyMaximumShown=12;policies.historyShowIcons=true
+        try check(try ConfigurationFiles.importNative(ConfigurationFiles.exportNative(policies))==policies,"New display/history settings round trip without loss")
+        for (key,value) in [("briefColumnWidthLimit",1201),("historyMaximumShown",0)] {try rejects(changed{o in var fields=o["configuration"] as! [String:Any];fields[key]=value;o["configuration"]=fields},"New numeric bounds enforced: \(key)")}
+        try rejects(changed{o in var fields=o["configuration"] as! [String:Any];fields["sortMethod"]="unknown";o["configuration"]=fields},"Unknown sort method rejected")
+        let policyINI=try ConfigurationFiles.importINI(Data("[Configuration]\nDirBrackets=3\nDirsInFooter=1\nSortDirsByName=1\nSaveHistory=1\nHistoryIcons=1\n".utf8),merging:CommanderConfiguration())
+        try check(policyINI.configuration.directoryBrackets && policyINI.configuration.directoryTrailingSlash && policyINI.configuration.showDirectoryCount && policyINI.configuration.directoriesAlwaysByName && policyINI.configuration.historySaveOnExit && policyINI.configuration.historyShowIcons,"Original display/history INI keys map to policies")
+        try check(policyINI.unsupported.count==1 && policyINI.invalid.isEmpty,"Native separator adaptation explicitly reported")
         print("Configuration file tests passed: \(count) assertions")
     }
 }

@@ -120,13 +120,14 @@ extension Pane {
             switch key {
             case "size":return a.size==b.size ? .orderedSame:(a.size<b.size ? .orderedAscending:.orderedDescending)
             case "date":return (a.modified ?? .distantPast).compare(b.modified ?? .distantPast)
-            case "ext":let x=(a.name as NSString).pathExtension,y=(b.name as NSString).pathExtension;return configuration.caseSensitiveSort ? x.compare(y):x.localizedStandardCompare(y)
-            default:return configuration.caseSensitiveSort ? a.name.compare(b.name):a.name.localizedStandardCompare(b.name)
+            case "ext":let x=(a.name as NSString).pathExtension,y=(b.name as NSString).pathExtension;return configuration.compareDisplayNames(x,y)
+            default:return configuration.compareDisplayNames(a.name,b.name)
             }
         }
         entries=entries.enumerated().sorted { left,right in
             let a=left.element,b=right.element
             if configuration.directoriesFirst,a.isDirectory != b.isDirectory{return a.isDirectory}
+            if configuration.directoriesFirst,configuration.directoriesAlwaysByName,a.isDirectory,b.isDirectory {let value=configuration.compareDisplayNames(a.name,b.name);return value == .orderedSame ? left.offset<right.offset:value == .orderedAscending}
             let keys=[(sortColumn,ascending)]+secondary.map{($0.hasPrefix("-") ? String($0.dropFirst()):$0,!$0.hasPrefix("-"))}
             for (key,forward) in keys {let value=compare(a,b,key:key);if value != .orderedSame{return forward ? value == .orderedAscending:value == .orderedDescending}}
             return left.offset<right.offset

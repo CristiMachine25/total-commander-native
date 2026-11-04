@@ -251,7 +251,7 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
         guard !configurationApplied || next != previous else{return}
         let firstApply = !configurationApplied
         let refilter=firstApply || next.ignoreListEnabled != previous.ignoreListEnabled || next.ignorePatterns != previous.ignorePatterns
-        let resort=refilter || next.directoriesFirst != previous.directoriesFirst || next.caseSensitiveSort != previous.caseSensitiveSort || next.customColumnSets != previous.customColumnSets || next.activeCustomColumnSetID != previous.activeCustomColumnSetID
+        let resort=refilter || next.directoriesFirst != previous.directoriesFirst || next.caseSensitiveSort != previous.caseSensitiveSort || next.sortMethod != previous.sortMethod || next.directoriesAlwaysByName != previous.directoriesAlwaysByName || next.customColumnSets != previous.customColumnSets || next.activeCustomColumnSetID != previous.activeCustomColumnSetID
         configuration=next;configurationApplied=true
         view.appearanceDidChange={ [weak self] in self?.refreshAppearanceRendering() }
         let base=NSFont(name:configuration.fileFontName,size:configuration.fileFontSize) ?? NSFont.systemFont(ofSize:configuration.fileFontSize)
@@ -280,7 +280,7 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
             let selection=table.selectedRowIndexes
             table.reloadData();table.selectRowIndexes(selection,byExtendingSelection:false)
         }
-        briefGrid.updateGeometry();updateDriveHeading();updateFooter()
+        briefGrid.invalidateMeasurements();briefGrid.updateGeometry();updateDriveHeading();updateFooter()
     }
     func refreshAppearanceRendering() {
         guard configurationApplied else{return}
@@ -352,7 +352,7 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
             case "date": text = e.modified.map { configuration.dateString($0) } ?? "—"
             default:
                 let prefix = marked.contains(e.url) ? "✓ " : ""
-                text = prefix + (e.isDirectory ? "[" + e.name + "]" : ((configuration.extensionStyle == .afterName && currentCustomColumnSet == nil) || (e.name as NSString).pathExtension.isEmpty ? e.name : (e.name as NSString).deletingPathExtension))
+                text = prefix + (e.isDirectory ? configuration.directoryDisplayName(e.name) : ((configuration.extensionStyle == .afterName && currentCustomColumnSet == nil) || (e.name as NSString).pathExtension.isEmpty ? e.name : (e.name as NSString).deletingPathExtension))
             }
         }
         }
@@ -399,20 +399,23 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
     func sortEntries() {
         guard sortColumn != "unsorted" else{return}
         if sortNamedViewEntriesIfNeeded() {return}
-        func compareName(_ a:String,_ b:String)->ComparisonResult {configuration.caseSensitiveSort ? a.compare(b):a.localizedStandardCompare(b)}
-        entries.sort { a,b in
+        func compareName(_ a:String,_ b:String)->ComparisonResult {configuration.compareDisplayNames(a,b)}
+        entries=entries.enumerated().sorted { left,right in
+            let a=left.element,b=right.element
             if configuration.directoriesFirst,a.isDirectory != b.isDirectory { return a.isDirectory }
+            if configuration.directoriesFirst,configuration.directoriesAlwaysByName,a.isDirectory,b.isDirectory {let c=compareName(a.name,b.name);return c == .orderedSame ? left.offset<right.offset:c == .orderedAscending}
             let comparison: ComparisonResult
             if let custom=compareCustomColumn(sortColumn,a,b) {comparison=custom == .orderedSame ? compareName(a.name,b.name):custom} else {
             switch sortColumn {
             case "ext": comparison = compareName((a.name as NSString).pathExtension,(b.name as NSString).pathExtension)
             case "size": comparison = a.size == b.size ? compareName(a.name,b.name) : (a.size < b.size ? .orderedAscending : .orderedDescending)
             case "date": comparison = (a.modified ?? .distantPast).compare(b.modified ?? .distantPast)
-            default: comparison = configuration.caseSensitiveSort ? a.name.compare(b.name):compareName(a.name,b.name)
+            default: comparison = compareName(a.name,b.name)
             }
             }
+            if comparison == .orderedSame{return left.offset<right.offset}
             return ascending ? comparison == .orderedAscending : comparison == .orderedDescending
-        }
+        }.map(\.element)
     }
     func tableViewSelectionDidChange(_ notification: Notification) { updateFooter(); if brief {briefGrid.revealSelection()};if viewMode == .thumbnails {thumbnailGrid.revealSelection()}; refreshVisibleColors();onSelectionChanged?() }
     private func refreshVisibleColors() {
@@ -432,7 +435,7 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
         applyListing(listing,location:next)
     }
     func applyListing(_ listing:[FileEntry], location next:PaneLocation,updateHeader:Bool=true) {
-        briefGrid.resetSelectionAnchor();systemIcons.removeAllObjects()
+        briefGrid.resetSelectionAnchor();briefGrid.invalidateMeasurements();systemIcons.removeAllObjects()
         let old=currentEntry?.url, same=location.identity == next.identity
         location=next
         if let local=next.localDirectory { directory=local }
@@ -486,7 +489,8 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
         if brief {briefGrid.updateGeometry()};if viewMode == .thumbnails {thumbnailGrid.updateGeometry()}
         let selected=selectedEntries,count=selected.count
         let total=selected.filter{!$0.isDirectory}.reduce(Int64(0)) {sum,entry in let (value,overflow)=sum.addingReportingOverflow(max(0,entry.size));return overflow ? Int64.max:value}
-        footer.stringValue = "\(entries.count) items  ·  \(count) selected · \(configuration.footerSizeString(total))" + (marked.isEmpty ? "" : "  ·  Space marks, Esc clears")
+        let directoryCounts=configuration.showDirectoryCount ? configuration.directoryCountSuffix(total:entries.lazy.filter{ $0.isDirectory }.count,selected:selected.lazy.filter{ $0.isDirectory }.count):""
+        footer.stringValue = "\(entries.count) items  ·  \(count) selected · \(configuration.footerSizeString(total))" + directoryCounts + (marked.isEmpty ? "" : "  ·  Space marks, Esc clears")
     }
     private func updateAppearance() {
         view.layer?.borderColor = (active ? NSColor.black : NSColor.darkGray.withAlphaComponent(0.45)).cgColor

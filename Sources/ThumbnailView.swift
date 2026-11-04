@@ -88,7 +88,7 @@ final class ThumbnailGridView:NSView {
                 icon.draw(in:NSRect(x:imageRect.midX-size.width/2,y:imageRect.midY-size.height/2,width:size.width,height:size.height),from:.zero,operation:.sourceOver,fraction:1,respectFlipped:true,hints:nil)
             }
             let marked=entry.map{pane.marked.contains($0.url)} ?? false
-            let text=index==0 ? "[..]":(marked ? "✓ ":"")+entry!.name
+            let text=index==0 ? "[..]":(marked ? "✓ ":"")+(entry!.isDirectory ? pane.configuration.directoryDisplayName(entry!.name):entry!.name)
             if let entry,!entry.isDirectory,pane.configuration.visibleColumns.contains("size") {
                 (pane.configuration.sizeString(entry.size) as NSString).draw(in:NSRect(x:rect.minX+4,y:rect.minY+CGFloat(pixels)+44,width:rect.width-8,height:18),withAttributes:[.font:NSFont.systemFont(ofSize:10),.foregroundColor:pane.itemColor(marked:marked,selected:selected),.paragraphStyle:paragraph])
             }

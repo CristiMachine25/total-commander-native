@@ -29,7 +29,10 @@ enum BriefLayout {
 #if !BRIEF_LAYOUT_TEST
 final class BriefGridView:NSView {
     weak var pane:Pane?
-    var columnWidth:CGFloat {max(80,CGFloat(pane?.configuration.columnWidths["name"] ?? 220))}
+    private(set) var columnWidth:CGFloat=220
+    private var measurementsDirty=true
+    func invalidateMeasurements(){measurementsDirty=true}
+    private var naturalWidth:CGFloat=220
     var rowsPerColumn=1
     var rowHeight:CGFloat { max(18,pane?.table.rowHeight ?? 21) }
     private var shiftAnchor:Int?
@@ -44,6 +47,17 @@ final class BriefGridView:NSView {
     required init?(coder:NSCoder) {fatalError()}
     func updateGeometry() {
         guard let pane,let scroll=enclosingScrollView else{return}
+        if measurementsDirty {
+            let iconWidth=pane.configuration.iconMode == .none ? CGFloat(0):CGFloat(pane.configuration.iconSize+5)
+            var widest:CGFloat=80
+            for entry in pane.entries {
+                let name=entry.isDirectory ? pane.configuration.directoryDisplayName(entry.name):entry.name
+                widest=max(widest,(name as NSString).size(withAttributes:[.font:pane.configuredFont]).width)
+            }
+            naturalWidth=widest+iconWidth+26;measurementsDirty=false
+        }
+        let limit=pane.configuration.briefColumnWidthLimit>0 ? CGFloat(pane.configuration.briefColumnWidthLimit):CGFloat.greatestFiniteMagnitude
+        columnWidth=max(80,min(naturalWidth,max(80,scroll.contentSize.width),limit))
         let height=max(1,scroll.contentSize.height)
         rowsPerColumn=BriefLayout.rows(height:height,rowHeight:rowHeight)
         let width=max(scroll.contentSize.width,CGFloat(BriefLayout.columns(count:pane.entries.count+1,rows:rowsPerColumn))*columnWidth)
@@ -74,7 +88,7 @@ final class BriefGridView:NSView {
                 else if pane.configuration.iconMode == .system,let entry,pane.location.localDirectory != nil {icon=pane.systemIcon(for:entry)}
                 let iconSize=CGFloat(pane.configuration.iconSize)
                 icon?.draw(in:NSRect(x:rect.minX+4,y:rect.minY+(rowHeight-iconSize)/2,width:iconSize,height:iconSize),from:.zero,operation:.sourceOver,fraction:1,respectFlipped:true,hints:nil)
-                let name=index == 0 ? "[..]" : ((marked ? "✓ " : "")+(entry!.isDirectory ? "[\(entry!.name)]" : entry!.name))
+                let name=index == 0 ? "[..]" : ((marked ? "✓ " : "")+(entry!.isDirectory ? pane.configuration.directoryDisplayName(entry!.name) : entry!.name))
                 let color=pane.itemColor(marked:marked,selected:selected)
                 (name as NSString).draw(in:NSRect(x:rect.minX+(icon == nil ? 4:iconSize+9),y:rect.minY+max(0,(rowHeight-font.pointSize-3)/2),width:columnWidth-(icon == nil ? 8:iconSize+14),height:rowHeight),withAttributes:[.font:font,.foregroundColor:color,.paragraphStyle:paragraph])
             }

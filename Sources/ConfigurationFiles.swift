@@ -24,11 +24,12 @@ enum ConfigurationFiles {
     static let version2Keys:Set<String> = ["tabsCloseOnDoubleClick","confirmCloseAllTabs","tabsShowLockAsterisk","customShortcuts","commandAliases","alternatingRowBackground","alternatingBackground","copyPreserveDirectoryDates","copyPreserveFileDates","copyPreservePermissions","copyVerifyAfterCopy","copyBufferSizeKB","copyDefaultCollision","confirmCopyMove","confirmOverwrite","deleteToTrash","confirmDelete","refreshOnActivate","autoRefreshEnabled","autoRefreshMetadata","autoRefreshOnlyForeground","autoRefreshExcludedPaths","autoRefreshUpdateHeader","dateSeparator","timeSeparator","use12HourTime","zipCompressionLevel","zipVerifyAfterPacking","archiveSetDateToNewest","browseArchivesAsDirectories","ftpPassiveMode","ftpConnectTimeout","ftpTransferTimeout","ftpOpenPanel"]
     static let version3Keys:Set<String> = ["customColumnSets","activeCustomColumnSetID","viewModes","autoSwitchRules","autoSwitchEnabled","autoSwitchRestoreDefault"]
     static let version4Keys:Set<String> = ["tabsRememberViewSettings","tabsRememberFileFilters","appearanceMode","darkPalette"]
+    static let version5Keys:Set<String> = ["directoryBrackets","directoryTrailingSlash","showDirectoryCount","directoriesAlwaysByName","briefColumnWidthLimit","sortMethod","historySaveOnExit","historyMaximumShown","historyShowIcons"]
     static let format="total-commander-native-configuration"
     private struct Envelope:Codable {let format:String;let version:Int;let configuration:CommanderConfiguration}
     static func exportNative(_ configuration:CommanderConfiguration)throws->Data {
         let encoder=JSONEncoder();encoder.outputFormatting=[.prettyPrinted,.sortedKeys]
-        let result=try encoder.encode(Envelope(format:format,version:4,configuration:configuration.normalized()))
+        let result=try encoder.encode(Envelope(format:format,version:5,configuration:configuration.normalized()))
         guard result.count<=maximumBytes else {throw ConfigurationFileError.invalid("Configuration exceeds the 1 MiB limit.")}
         return result
     }
@@ -37,9 +38,9 @@ enum ConfigurationFiles {
         guard let object=try JSONSerialization.jsonObject(with:data) as? [String:Any],
               Set(object.keys)==Set(["format","version","configuration"]),
               object["format"] as? String == format,
-              let version=object["version"] as? NSNumber,CFGetTypeID(version) != CFBooleanGetTypeID(),[1.0,2.0,3.0,4.0].contains(version.doubleValue),
+              let version=object["version"] as? NSNumber,CFGetTypeID(version) != CFBooleanGetTypeID(),[1.0,2.0,3.0,4.0,5.0].contains(version.doubleValue),
               object["configuration"] is [String:Any] else {
-            throw ConfigurationFileError.invalid("Not a supported native configuration file (version 1 through 4).")
+            throw ConfigurationFileError.invalid("Not a supported native configuration file (version 1 through 5).")
         }
         try rejectDuplicateKeys(data)
         let envelope=try JSONDecoder().decode(Envelope.self,from:data)
@@ -47,9 +48,10 @@ enum ConfigurationFiles {
         // CommanderConfiguration's persistence decoder deliberately tolerates old/malformed
         // stored keys. File import must not silently replace bad input with those defaults.
         var canonical=try JSONSerialization.jsonObject(with:exportNative(normalized)) as! [String:Any]
-        if envelope.version<4 {
+        if envelope.version<5 {
             var fields=canonical["configuration"] as! [String:Any]
-            for key in version4Keys {fields.removeValue(forKey:key)}
+            for key in version5Keys {fields.removeValue(forKey:key)}
+            if envelope.version<4 {for key in version4Keys {fields.removeValue(forKey:key)}}
             if envelope.version<3 {for key in version3Keys {fields.removeValue(forKey:key)}}
             if envelope.version==1 {for key in version2Keys {fields.removeValue(forKey:key)}}
             canonical["configuration"]=fields;canonical["version"]=envelope.version
@@ -155,6 +157,15 @@ enum ConfigurationFiles {
                     guard let value,styles.indices.contains(value) else{bad();continue}
                     if e.key=="sizestyle"{result.sizeFormat=styles[value]}else{result.footerSizeFormat=styles[value]};importedKey()
                 case "sizestyle1000":boolean(\.useDecimalUnits)
+                case "dirbrackets":
+                    guard let value,(0...3).contains(value) else{bad();continue}
+                    result.directoryBrackets=value&1 != 0;result.directoryTrailingSlash=value&2 != 0;importedKey()
+                    if value&2 != 0{unsupported.append(e.label+": directory separator is / on macOS instead of Windows backslash")}
+                case "dirsinfooter":boolean(\.showDirectoryCount)
+                case "sortdirsbyname":boolean(\.directoriesAlwaysByName)
+                case "savehistory":boolean(\.historySaveOnExit)
+                case "historyicons":boolean(\.historyShowIcons)
+
                 case "usetrash":boolean(\.deleteToTrash)
                 case "verifycopy":boolean(\.copyVerifyAfterCopy)
                 case "copydirtimestamp":boolean(\.copyPreserveDirectoryDates)
