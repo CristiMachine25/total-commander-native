@@ -44,6 +44,17 @@ extension NativeCommander {
         c.separateTrees.setState(1);precondition(!c.separateTrees.leftView.isHidden && c.separateTrees.rightView.isHidden)
         c.separateTrees.setState(2);precondition(!c.separateTrees.rightView.isHidden)
         c.separateTrees.setState(0);precondition(c.separateTrees.leftView.isHidden && c.separateTrees.rightView.isHidden)
+        let escape=NSEvent.keyEvent(with:.keyDown,location:.zero,modifierFlags:[],timestamp:0,windowNumber:c.window.windowNumber,context:nil,characters:"\u{1b}",charactersIgnoringModifiers:"\u{1b}",isARepeat:false,keyCode:53)!
+        c.commandField.stringValue="unfinished command";c.window.makeFirstResponder(c.commandField)
+        precondition(c.handleFieldEscape(escape) && c.commandField.stringValue.isEmpty && c.window.firstResponder === c.activePane.fileResponder)
+        c.window.makeFirstResponder(c.right.path);c.right.path.stringValue="/unfinished-path"
+        precondition(c.handleFieldEscape(escape) && c.activeIndex==1 && c.right.path.stringValue==c.right.location.displayPath)
+        c.activate(0);c.left.clearMarks();c.left.table.selectRowIndexes(IndexSet(integer:1),byExtendingSelection:false)
+        let space=NSEvent.keyEvent(with:.keyDown,location:.zero,modifierFlags:[],timestamp:0,windowNumber:c.window.windowNumber,context:nil,characters:" ",charactersIgnoringModifiers:" ",isARepeat:false,keyCode:49)!
+        c.left.table.keyDown(with:space);precondition(c.left.marked.count==1)
+        c.left.table.selectRowIndexes(IndexSet(integer:3),byExtendingSelection:false);c.left.table.keyDown(with:space)
+        precondition(c.left.marked.count==2,"Space must retain nonadjacent marks")
+        c.left.clearMarks()
         let fileEditor=try ConfigurationFilesController(c)
         var edited=c.runtimeConfig;edited.sizeFormat = .gigabytes
         fileEditor.textView.string=String(decoding:try ConfigurationFiles.exportNative(edited),as:UTF8.self)

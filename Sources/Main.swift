@@ -576,6 +576,7 @@ class CommanderController: NSObject, NSWindowDelegate, NSUserInterfaceValidation
         separateTrees.restore()
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self = self, event.window === self.window, self.window.attachedSheet == nil else { return event }
+            if self.handleFieldEscape(event) {return nil}
             let functionKeys: Set<UInt16> = [122,120,99,118,96,97,98,100,101,109]
             if functionKeys.contains(event.keyCode), self.handleKey(event) { return nil }
             return event
