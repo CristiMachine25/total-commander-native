@@ -64,7 +64,7 @@ extension CommanderController {
             item("Copy to other pane…",4,canTransfer);item("Move to other pane…",5,canTransfer && writable)
             item("Rename…",6,single && writable)
             let deletion:String
-            switch pane.location {case .local:deletion="Move to Trash…";case .archive:deletion="Delete from archive…";case .ftp:deletion="Delete from server…"}
+            switch pane.location {case .local:deletion=runtimeConfig.deleteToTrash ? "Move to Trash…" : "Delete permanently…";case .archive:deletion="Delete from archive…";case .ftp:deletion="Delete from server…"}
             item(deletion,7,!entries.isEmpty && writable)
             menu.addItem(.separator());item("Copy full paths",8,!entries.isEmpty)
             item("Properties",9,single && pane.location.localDirectory != nil)

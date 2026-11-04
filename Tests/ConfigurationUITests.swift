@@ -27,6 +27,17 @@ final class CommanderController:NSObject {
             let views=descendants(window.contentView!)
             try check(views.compactMap{$0 as? NSScrollView}.allSatisfy{$0.frame.width>100 && $0.frame.height>50},"Category \(row) content and navigation have usable geometry")
         }
+        navigation.selectRowIndexes(IndexSet(integer:14),byExtendingSelection:false)
+        let copyVerify=descendants(window.contentView!).compactMap{$0 as? NSButton}.first{$0.title=="Verify copied file data before committing"}!
+        copyVerify.state = .on
+        let collision=descendants(window.contentView!).compactMap{$0 as? NSPopUpButton}.first{$0.itemTitles.contains("Keep both (rename)")}!
+        collision.selectItem(withTitle:"Keep both (rename)")
+        navigation.selectRowIndexes(IndexSet(integer:20),byExtendingSelection:false)
+        let compression=descendants(window.contentView!).compactMap{$0 as? NSPopUpButton}.first{$0.itemTitles.contains("0 — Store")}!
+        compression.selectItem(withTitle:"0 — Store")
+        navigation.selectRowIndexes(IndexSet(integer:15),byExtendingSelection:false)
+        let automatic=descendants(window.contentView!).compactMap{$0 as? NSButton}.first{$0.title=="Automatically refresh changed local folders"}!
+        automatic.state = .on
         navigation.selectRowIndexes(IndexSet(integer:5),byExtendingSelection:false)
         let sizeChoice=descendants(window.contentView!).compactMap{$0 as? NSPopUpButton}.first{$0.itemTitles.contains("Fixed MB (native addition)")}!
         try check(sizeChoice.numberOfItems==12,"Tabstops exposes all ten original formats plus explicit fixed MB/GB choices")
@@ -42,6 +53,7 @@ final class CommanderController:NSObject {
         let persistedBefore=UserDefaults.standard.data(forKey:CommanderConfiguration.defaultsKey)
         apply.performClick(nil)
         try check(commander.refreshed==0,"Applying settings does not start an unconditional second directory scan")
+        try check(commander.runtimeConfig.copyVerifyAfterCopy && commander.runtimeConfig.copyDefaultCollision=="rename" && commander.runtimeConfig.zipCompressionLevel==0 && commander.runtimeConfig.autoRefreshEnabled,"Edited copy, ZIP and refresh controls survive page switching and Apply")
         try check(commander.applied==1 && commander.runtimeConfig.showHidden && commander.runtimeConfig.sizeFormat == .megabytes,"Apply invokes actual runtime configuration update")
         try check(UserDefaults.standard.data(forKey:CommanderConfiguration.defaultsKey)==persistedBefore,"Non-persistent UI fixture never writes user settings")
         let afterApplyHidden=descendants(window.contentView!).compactMap{$0 as? NSButton}.first{$0.title=="Show hidden files"}!

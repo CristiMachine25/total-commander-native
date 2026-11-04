@@ -10,23 +10,23 @@ private struct ConfigurationPage {
         .init(title:"Display",missing:"DOS 8.3 filenames, Windows system attributes, file comments and plugin tooltips."),
         .init(title:"Icons",missing:"Windows EXE/LNK extraction, shell overlays and per-resolution icon profiles."),
         .init(title:"Font",missing:"Per-resolution font profiles, dialog DPI scaling and separate main-window/dialog fonts."),
-        .init(title:"Color",missing:"File-type color rules, alternating row colors and separate dark-mode palettes."),
-        .init(title:"Tabstops",missing:"Custom date/time separators and 12-hour overrides."),
+        .init(title:"Color",missing:"File-type color rules and separate dark-mode palettes."),
+        .init(title:"Tabstops",missing:"Independent progress-dialog units."),
         .init(title:"Custom Columns",missing:"Content-plugin fields and saved custom-column sets."),
         .init(title:"View Modes",missing:"Saved named view modes and automatic switching rules."),
         .init(title:"Auto Switch Mode",missing:"Automatic directory/file-type rules selecting a saved view mode."),
-        .init(title:"Folder Tabs",missing:"Locked tabs, multiline tabs, tab double-click closing and per-tab display filters."),
+        .init(title:"Folder Tabs",missing:"Locked tabs allowing directory changes, remote tab locks, multiline tabs and per-tab display filters."),
         .init(title:"Thumbnails",missing:"Windows OLE/Lister-plugin providers, EXIF custom fields and a persistent thumbnail database."),
         .init(title:"Operation",missing:"Tray behavior, mouse-selection compatibility modes and file-comment formats."),
         .init(title:"Edit/View",missing:"Per-extension external viewer associations, Windows command-line placeholders, Lister plugins/encoding presets, fixed-column wrap length and automatic FTP re-upload without confirmation."),
-        .init(title:"Confirmation",missing:"Original per-operation overwrite, delete and miscellaneous confirmation policies."),
-        .init(title:"Copy/Delete",missing:"Custom copy buffers, Windows CopyFileEx modes, NTFS permissions/streams, and all original confirmation switches."),
-        .init(title:"Refresh",missing:"Configurable filesystem-notification exclusions and original auto-refresh policies."),
+        .init(title:"Confirmation",missing:"Separate read-only/hidden-file prompts, drag-and-drop policy and external-command hotkeys. Permanent deletion always requires confirmation."),
+        .init(title:"Copy/Delete",missing:"Windows CopyFileEx modes, NTFS streams, operation filters and remote resume. These copy policies apply to local filesystem transfers."),
+        .init(title:"Refresh",missing:"Remote FTP/archive filesystem notifications and Windows removable/network-drive notifications."),
         .init(title:"Quick Search",missing:"Letters-with-dialog mode, original search-dialog widgets and last-filter restoration."),
         .init(title:"History",missing:"History thinning, frequency ranking, icons/fonts and custom history storage paths."),
         .init(title:"FTP",missing:"Global proxy, connection pooling, server encoding and legacy firewall options. Per-connection FTP/TLS settings are in Net → FTP Connect."),
         .init(title:"Packer",missing:"External packer commands and non-ZIP write formats."),
-        .init(title:"ZIP Packer",missing:"Original ZIP compression, encryption and multi-volume configuration."),
+        .init(title:"ZIP Packer",missing:"Encryption, multi-volume ZIP and external ZIP implementations. Compression settings apply to new ZIP creation."),
         .init(title:"Plugins",missing:"Windows WCX/WFX/WLX/WDX plugin loading on native macOS."),
         .init(title:"Language",missing:"Runtime language-pack selection and localized native dialogs."),
         .init(title:"Ignore List",missing:"Recursive copy/move/synchronize exclusion, absolute paths, FTP/plugin prefixes and tcignore.txt import/export. This control currently filters the visible list only.")
@@ -134,7 +134,7 @@ final class PreferencesController:NSWindowController,NSWindowDelegate,NSTableVie
         case "Display":checkbox("Show hidden files",\.showHidden);checkbox("Directories before files",\.directoriesFirst);checkbox("Case-sensitive name sorting",\.caseSensitiveSort)
         case "Icons":choice("Show icons to the left of the filename",\.iconMode,[("All associated (macOS)",.system),("Only standard icons",.standard),("No icons",.none)]);integer("Icon size",\.iconSize,12...48)
         case "Font":text("File list font",\.fileFontName);number("Font size",\.fileFontSize,9...36);checkbox("Bold",\.fileFontBold);number("File row height",\.rowHeight,16...64)
-        case "Color":color("Font color",\.foreground);color("Background",\.background);color("Mark color",\.markedForeground);color("Cursor color",\.selectionBackground);color("Cursor font",\.selectionForeground)
+        case "Color":color("Font color",\.foreground);color("Background",\.background);color("Mark color",\.markedForeground);color("Cursor color",\.selectionBackground);color("Cursor font",\.selectionForeground);checkbox("Use alternating row backgrounds",\.alternatingRowBackground);color("Alternate row background",\.alternatingBackground)
         case "Tabstops":
             choice("Show file extensions",\.extensionStyle,[("Aligned (with TAB)",.aligned),("Directly after filename",.afterName)])
             for (key,title) in [("name","Name"),("ext","Extension"),("size","Size"),("date","Date/time"),("attr","Attributes")]{
@@ -147,10 +147,43 @@ final class PreferencesController:NSWindowController,NSWindowDelegate,NSTableVie
             checkbox("Use 1000-byte units (SizeStyle1000)",\.useDecimalUnits)
             choice("Date format",\.dateOrder,[("System locale",.system),("Day first",.dayFirst),("Month first",.monthFirst),("Year first (ISO)",.yearFirst)])
             checkbox("Show century in date",\.showCentury);checkbox("Show seconds",\.showSeconds)
-        case "Folder Tabs":checkbox("Show tab header also when there is only one tab",\.tabsAlwaysVisible);integer("Limit tab length to characters",\.tabTitleMaximum,8...100);checkbox("Open new tabs near current tab",\.newTabBesideCurrent)
+            text("Date separator (blank = default)",\.dateSeparator);text("Time separator (blank = default)",\.timeSeparator);checkbox("Use 12-hour time",\.use12HourTime)
+        case "Folder Tabs":checkbox("Show tab header also when there is only one tab",\.tabsAlwaysVisible);integer("Limit tab length to characters",\.tabTitleMaximum,8...100);checkbox("Open new tabs near current tab",\.newTabBesideCurrent);checkbox("Close tab on double-click",\.tabsCloseOnDoubleClick);checkbox("Confirm closing all other tabs",\.confirmCloseAllTabs);checkbox("Show asterisk on locked tabs",\.tabsShowLockAsterisk)
         case "Thumbnails":integer("Thumbnail size (pixels)",\.thumbnailSize,64...256)
         case "Operation":checkbox("Save directory/tabs on exit",\.saveOnExit);checkbox("Open files/directories with a single click",\.singleClickOpen);checkbox("Select directories with Select All",\.selectionIncludesDirectories)
         case "Edit/View":checkbox("Use external viewer for F3",\.externalViewerEnabled);application("External viewer application",\.externalViewerPath);checkbox("Use external editor for F4",\.externalEditorEnabled);application("External editor application",\.externalEditorPath);text("Internal viewer font",\.viewerFontName);number("Internal viewer font size",\.viewerFontSize,9...36);checkbox("Wrap internal viewer text to window",\.viewerWordWrap)
+        case "Confirmation":
+            checkbox("Confirm local copy/move destination",\.confirmCopyMove)
+            checkbox("Confirm replacement of existing local files",\.confirmOverwrite)
+            checkbox("Confirm moving local files to Trash",\.confirmDelete)
+            text("Shortcuts (Ctrl+Shift+C=cm_CopyFullNamesToClip)",\.customShortcuts)
+            text("Aliases (full=cm_SrcLong; brief=cm_SrcShort)",\.commandAliases)
+        case "Copy/Delete":
+            choice("Existing local destination",\.copyDefaultCollision,[("Ask", "ask"),("Skip existing", "skip"),("Replace existing", "replace"),("Keep both (rename)", "rename")])
+            checkbox("Preserve file timestamps",\.copyPreserveFileDates)
+            checkbox("Preserve directory timestamps",\.copyPreserveDirectoryDates)
+            checkbox("Preserve permissions",\.copyPreservePermissions)
+            checkbox("Verify copied file data before committing",\.copyVerifyAfterCopy)
+            integer("Copy buffer size (KiB)",\.copyBufferSizeKB,64...16384)
+            checkbox("Delete local files to Trash",\.deleteToTrash)
+        case "Refresh":
+            checkbox("Refresh local panes when app becomes active",\.refreshOnActivate)
+            checkbox("Automatically refresh changed local folders",\.autoRefreshEnabled)
+            checkbox("Also detect size/date changes",\.autoRefreshMetadata)
+            checkbox("Only while this app is in the foreground",\.autoRefreshOnlyForeground)
+            checkbox("Update free-space header during automatic refresh",\.autoRefreshUpdateHeader)
+            text("Excluded local paths (separated by ;)",\.autoRefreshExcludedPaths)
+        case "FTP":
+            checkbox("Passive mode for new connections",\.ftpPassiveMode)
+            integer("Connect timeout (seconds)",\.ftpConnectTimeout,1...300)
+            integer("Transfer timeout (seconds)",\.ftpTransferTimeout,1...86400)
+            choice("Open connection in",\.ftpOpenPanel,[("Active pane",0),("Left pane",1),("Right pane",2),("Other pane",3)])
+        case "Packer":
+            checkbox("Open archives like directories",\.browseArchivesAsDirectories)
+            checkbox("Set new ZIP date to newest source file",\.archiveSetDateToNewest)
+        case "ZIP Packer":
+            choice("ZIP compression level",\.zipCompressionLevel,[("0 — Store",0),("1 — Fastest",1),("2",2),("3",3),("4",4),("5",5),("6 — Normal",6),("7",7),("8",8),("9 — Maximum",9)])
+            checkbox("Verify ZIP after packing",\.zipVerifyAfterPacking)
         case "Quick Search":choice("Quick search in current directory",\.quickSearchMode,[("Disabled",.disabled),("Letter only",.letters),("ALT + Letters",.alt),("CTRL + ALT + Letters",.ctrlAlt)]);checkbox("Beginning: name must start with typed characters",\.quickSearchMatchBeginning);checkbox("Ending: exact name before typed dot",\.quickSearchMatchEnding)
         case "Ignore List":checkbox("Enable ignore list — display filtering only",\.ignoreListEnabled);text("Name patterns (separated by ;)",\.ignorePatterns)
         case "History":integer("Maximum directory history items",\.historyLimit,1...200)
@@ -169,7 +202,13 @@ final class PreferencesController:NSWindowController,NSWindowDelegate,NSTableVie
     func applyDraft()throws {
             guard let commander else{throw failure("The file-manager window is no longer available.")}
             guard commander.runtimeConfig==baseline else{throw failure("Settings changed while this dialog was open. Close and reopen it to avoid overwriting newer changes.")}
-            try collect();draft=draft.normalized()
+            try collect()
+            guard draft.dateSeparator.count<=3,draft.timeSeparator.count<=3,!draft.dateSeparator.contains(where:{$0.isNewline}),!draft.timeSeparator.contains(where:{$0.isNewline}) else{throw failure("Date/time separators must contain at most three characters and no line breaks.")}
+            for path in draft.autoRefreshExcludedPaths.split(separator:";").map({$0.trimmingCharacters(in:.whitespacesAndNewlines)}) where !path.isEmpty {
+                guard path.hasPrefix("/") || path.hasPrefix("~/") else{throw failure("Refresh exclusions must be absolute local folder paths, separated by semicolons.")}
+            }
+            try ShortcutSettings.validate(shortcuts:draft.customShortcuts,aliases:draft.commandAliases)
+            draft=draft.normalized()
             for (enabled,path,title) in [(draft.externalViewerEnabled,draft.externalViewerPath,"Viewer"),(draft.externalEditorEnabled,draft.externalEditorPath,"Editor")] where enabled {
                 var directory:ObjCBool=false
                 guard path.hasPrefix("/"),URL(fileURLWithPath:path).pathExtension.lowercased()=="app",FileManager.default.fileExists(atPath:path,isDirectory:&directory),directory.boolValue else{throw failure("\(title): choose an existing macOS .app application.")}

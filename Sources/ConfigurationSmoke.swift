@@ -55,6 +55,15 @@ extension NativeCommander {
         c.left.table.selectRowIndexes(IndexSet(integer:3),byExtendingSelection:false);c.left.table.keyDown(with:space)
         precondition(c.left.marked.count==2,"Space must retain nonadjacent marks")
         c.left.clearMarks()
+        c.runtimeConfig.customShortcuts="Ctrl+Shift+B=cm_SrcShort"
+        let boundKey=NSEvent.keyEvent(with:.keyDown,location:.zero,modifierFlags:[.control,.shift],timestamp:0,windowNumber:c.window.windowNumber,context:nil,characters:"B",charactersIgnoringModifiers:"B",isARepeat:false,keyCode:11)!
+        c.activate(0)
+        precondition(c.handleCustomShortcut(boundKey) && c.activePane.brief,"Configured shortcut must dispatch to the active pane")
+        c.window.makeFirstResponder(c.commandField)
+        precondition(!c.handleCustomShortcut(boundKey),"Configured shortcuts must not intercept field typing")
+        c.runtimeConfig.commandAliases="full=cm_SrcLong";c.commandField.stringValue="FULL";c.runCommand(c.commandField)
+        precondition(c.activePane.viewMode == .full && c.commandField.stringValue.isEmpty,"Configured command alias did not dispatch")
+        c.runtimeConfig.customShortcuts="";c.runtimeConfig.commandAliases=""
         let savedBar=UserDefaults.standard.data(forKey:CommanderButtonBar.defaultsKey)
         precondition(c.referenceCommandEnabled(498))
         let barEditor=ButtonBarEditor(c)

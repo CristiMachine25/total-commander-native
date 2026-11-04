@@ -221,7 +221,8 @@ extension CommanderController {
         prompt(title: "Pack Files", detail: "Create a ZIP archive in \(destination.path)", value: (sources.count == 1 ? sources[0].deletingPathExtension().lastPathComponent : "Archive") + ".zip", action: "Pack") { [weak self] name in
             guard let self else { return }
             do { try self.validArchiveName(name); guard name.lowercased().hasSuffix(".zip") else { throw FileServiceError.invalid("This build creates ZIP archives. Use a .zip file name.") }; let tool = try self.archiveTool(); let archive = destination.appendingPathComponent(name)
-                self.runOperation("Packing", success: "Created \(name)") { try NativeOperations.pack(sources: sources, archive: archive, tool: tool) }
+                let options=NativeOperations.ZIPOptions(compressionLevel:self.runtimeConfig.zipCompressionLevel,verifyAfterPacking:self.runtimeConfig.zipVerifyAfterPacking,setDateToNewest:self.runtimeConfig.archiveSetDateToNewest)
+                self.runOperation("Packing", success: "Created \(name)") { try NativeOperations.pack(sources: sources, archive: archive, tool: tool,options:options) }
             } catch { self.showError(error) }
         }
     }

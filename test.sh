@@ -73,9 +73,9 @@ xcrun swiftc -swift-version 5 -framework AppKit Sources/ConfigurationModel.swift
 "$TEST_WORK/configuration"
 xcrun swiftc -swift-version 5 -framework AppKit Sources/ConfigurationModel.swift Tests/ConfigurationFormatterTests.swift -o "$TEST_WORK/configuration-formatters"
 "$TEST_WORK/configuration-formatters"
-xcrun swiftc -swift-version 5 -framework AppKit Sources/ConfigurationModel.swift Sources/ConfigurationFiles.swift Tests/ConfigurationFilesTests.swift -o "$TEST_WORK/configuration-files"
+xcrun swiftc -swift-version 5 -framework AppKit Sources/ConfigurationModel.swift Sources/ShortcutSettings.swift Sources/ConfigurationFiles.swift Tests/ConfigurationFilesTests.swift -o "$TEST_WORK/configuration-files"
 "$TEST_WORK/configuration-files"
-xcrun swiftc -swift-version 5 -framework AppKit Sources/ConfigurationModel.swift Sources/Preferences.swift Tests/ConfigurationUITests.swift -o "$TEST_WORK/configuration-ui"
+xcrun swiftc -swift-version 5 -framework AppKit Sources/ConfigurationModel.swift Sources/ShortcutSettings.swift Sources/Preferences.swift Tests/ConfigurationUITests.swift -o "$TEST_WORK/configuration-ui"
 "$TEST_WORK/configuration-ui"
 xcrun swiftc -swift-version 5 -D THUMBNAIL_TEST -framework AppKit -framework ImageIO Sources/Lister.swift Sources/ThumbnailView.swift Tests/ThumbnailTests.swift -o "$TEST_WORK/thumbnails"
 "$TEST_WORK/thumbnails"
@@ -96,7 +96,21 @@ xcrun swiftc -swift-version 5 -framework AppKit -framework ImageIO "${PANE_SOURC
 xcrun swiftc -swift-version 5 -framework AppKit -framework ImageIO "${PANE_SOURCES[@]}" "$TEST_WORK/MainWithoutEntry.swift" Tests/ContextMenuTests.swift -o "$TEST_WORK/context-menu"
 "$TEST_WORK/context-menu"
 "${FTP_TEST_PYTHON:-python3}" Tests/ProviderIntegration.py "$TEST_WORK/ui" "$PWD/Resources/7zz"
-printf '%s\n' 'All native backend and provider integration suites passed.'
+
 
 xcrun swiftc -swift-version 5 Sources/ButtonBarModel.swift Tests/ButtonBarTests.swift -o "$TEST_WORK/button-bar"
 "$TEST_WORK/button-bar"
+
+xcrun swiftc -swift-version 5 Sources/Operations.swift Tests/ArchiveSettingsTests.swift -o "$TEST_WORK/archive-settings"
+"$TEST_WORK/archive-settings" "$PWD/Resources/7zz"
+xcrun swiftc -swift-version 5 -framework AppKit Sources/ConfigurationModel.swift Tests/DateSettingsTests.swift -o "$TEST_WORK/date-settings"
+"$TEST_WORK/date-settings"
+xcrun swiftc -swift-version 5 Sources/ShortcutSettings.swift Tests/ShortcutSettingsTests.swift -o "$TEST_WORK/shortcut-settings"
+"$TEST_WORK/shortcut-settings"
+xcrun swiftc -swift-version 5 -D SHORTCUT_SETTINGS_EVENT_TESTS -framework AppKit Sources/ShortcutSettings.swift Sources/ShortcutSettingsIntegration.swift Tests/ShortcutSettingsEventTests.swift -o "$TEST_WORK/shortcut-settings-events"
+"$TEST_WORK/shortcut-settings-events"
+xcrun swiftc -swift-version 5 -framework AppKit -framework ImageIO "${PANE_SOURCES[@]}" "$TEST_WORK/MainWithoutEntry.swift" Tests/RefreshSettingsTests.swift -o "$TEST_WORK/refresh-settings"
+"$TEST_WORK/refresh-settings"
+xcrun swiftc -swift-version 5 -framework AppKit -framework ImageIO "${PANE_SOURCES[@]}" "$TEST_WORK/MainWithoutEntry.swift" Tests/TabSettingsTests.swift -o "$TEST_WORK/tab-settings"
+"$TEST_WORK/tab-settings"
+printf '%s\n' 'All native backend and provider integration suites passed.'

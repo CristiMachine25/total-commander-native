@@ -21,21 +21,17 @@ extension CommanderController {
         navigate(next,pane:pane,recordHistory:false) {success in if success {pane.forwardHistory=future;pane.backHistory=history}}
     }
     @objc func newTab() {openLocationInNewTab(activePane.location)}
-    @objc func closeTab() {
-        let p=activePane
-        guard !busy,!p.isLoading,p.tabs.count>1 else{return}
-        let oldTabs=p.tabs,oldIndex=p.selectedTab
-        p.tabs.remove(at:p.selectedTab);p.selectedTab=min(p.selectedTab,p.tabs.count-1)
-        navigate(p.tabs[p.selectedTab],pane:p,recordHistory:false) {success in if !success {p.tabs=oldTabs;p.selectedTab=oldIndex};p.updateTabs()}
-    }
+    @objc func closeTab() {closeFolderTab(activePane.selectedTab,pane:activePane)}
     @objc func invertSelection() {
         let all = Set(activePane.entries.filter{runtimeConfig.selectionIncludesDirectories || !$0.isDirectory}.map(\.url)); activePane.marked = activePane.marked.symmetricDifference(all)
         activePane.table.reloadData(); activePane.updateFooter()
     }
     @objc func clearSelection() { activePane.clearMarks() }
     @objc func runCommand(_ field: NSTextField) {
-        let command = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        var command = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !command.isEmpty, !busy else { return }
+        do {if let alias=try configuredShortcuts().command(forAlias:command){command=alias}}
+        catch {showError(error);return}
         if command.lowercased().hasPrefix("cm_") {
             field.stringValue = ""
             if !dispatchInternalCommand(command) { showMessage("Unknown internal command",command + " is not implemented in this native build.") }
@@ -115,8 +111,10 @@ extension CommanderController {
 
 extension CommanderController {
     @objc func connectFTP() {
-        let pane=activePane
-        FTPBrowserWindow(downloadDirectory:otherPane.directory,onConnect:{ [weak self,weak pane] client,path in
+        let pane:Pane
+        switch runtimeConfig.ftpOpenPanel {case 1:pane=left;case 2:pane=right;case 3:pane=otherPane;default:pane=activePane}
+        let options=FTPConnectionOptions(passiveMode:runtimeConfig.ftpPassiveMode,connectTimeout:runtimeConfig.ftpConnectTimeout,transferTimeout:runtimeConfig.ftpTransferTimeout)
+        FTPBrowserWindow(downloadDirectory:otherPane.directory,options:options,onConnect:{ [weak self,weak pane] client,path in
             guard let self,let pane else{return};self.navigate(.ftp(client,path:path),pane:pane)
         }).display()
     }

@@ -68,6 +68,7 @@ final class BriefGridView:NSView {
                 let entry=index == 0 ? nil : pane.entries[index-1]
                 let marked=entry.map{pane.marked.contains($0.url)} ?? false
                 if selected { pane.configuration.selectionBackground.nsColor.setFill();rect.fill() }
+                else {pane.itemBackground(row:index).setFill();rect.fill()}
                 var icon=index == 0 ? upIcon : (entry?.isDirectory == true ? folderIcon : fileIcon)
                 if pane.configuration.iconMode == .none {icon=nil}
                 else if pane.configuration.iconMode == .system,let entry,pane.location.localDirectory != nil {icon=pane.systemIcon(for:entry)}

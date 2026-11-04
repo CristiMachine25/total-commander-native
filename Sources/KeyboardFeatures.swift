@@ -193,7 +193,7 @@ extension CommanderController {
         guard !busy, p.tabs.count > 1 else { return }
         selectTab((p.selectedTab + delta + p.tabs.count) % p.tabs.count)
     }
-    @objc func closeAllTabs() { guard !busy else { return }; activePane.tabs=[activePane.location];activePane.selectedTab=0;activePane.updateTabs() }
+    @objc func closeAllTabs() {closeOtherTabs(activePane)}
     func openTab(background:Bool) { guard !busy else { return }; openLocationInNewTab(activePane.location,pane:activePane,background:background) }
     func selectionPattern(remove: Bool, filesOnly: Bool? = nil) {
         let pane = activePane
@@ -293,6 +293,7 @@ extension CommanderController {
         for (name,p) in [("left",left),("right",right)] {
             let locals=p.tabs.enumerated().compactMap { index,location -> (Int,String)? in location.localDirectory.map { (index,$0.path) } }
             UserDefaults.standard.set(locals.map{$0.1},forKey:name+"Tabs")
+            UserDefaults.standard.set(p.savedLocalTabLocks,forKey:name+"TabLocks")
             UserDefaults.standard.set(locals.firstIndex(where:{$0.0 == p.selectedTab}) ?? 0,forKey:name+"TabIndex")
         }
         UserDefaults.standard.set(showHidden,forKey:"showHidden")
@@ -304,6 +305,7 @@ extension CommanderController {
             if let paths=UserDefaults.standard.stringArray(forKey:name+"Tabs"), !paths.isEmpty {
                 p.tabs=paths.map { .local(URL(fileURLWithPath:$0)) }; p.selectedTab=min(max(0,UserDefaults.standard.integer(forKey:name+"TabIndex")),p.tabs.count-1)
                 if (try? p.load(p.tabs[p.selectedTab].localDirectory!,showHidden:showHidden)) == nil { p.tabs[p.selectedTab]=p.location }
+                p.restoreLocalTabLocks(UserDefaults.standard.dictionary(forKey:name+"TabLocks") as? [String:String] ?? [:])
                 p.updateTabs()
             } else if let local=p.location.localDirectory { try? p.load(local,showHidden:showHidden) }
         }

@@ -33,6 +33,9 @@ extension CommanderController {
     @discardableResult func navigate(_ next:PaneLocation,pane:Pane?=nil,recordHistory:Bool=true,focus:Bool=true,storeTab:Bool=true,completion:((Bool)->Void)?=nil)->Bool {
         guard !busy else {completion?(false);return false}
         let target=pane ?? activePane
+        if storeTab,target.lockedTabRoots[target.selectedTab] != nil,next != target.location {
+            return openLocationInNewTab(next,pane:target,background:false,completion:completion)
+        }
         target.loadTask?.cancel();target.loadGeneration += 1
         let generation=target.loadGeneration,previous=target.location,showHidden=self.showHidden
         func commit(_ rows:[FileEntry]) {
@@ -73,11 +76,14 @@ extension CommanderController {
             p.updateTabs()
         }
     }
-    func openLocationInNewTab(_ location:PaneLocation,pane:Pane?=nil,background:Bool=false) {
-        let p=pane ?? activePane;guard !busy else {return}
+    @discardableResult func openLocationInNewTab(_ location:PaneLocation,pane:Pane?=nil,background:Bool=false,completion:((Bool)->Void)?=nil)->Bool {
+        let p=pane ?? activePane;guard !busy else {completion?(false);return false}
         let index=runtimeConfig.newTabBesideCurrent ? p.selectedTab+1 : p.tabs.count
-        p.tabs.insert(location,at:index)
-        if background {p.updateTabs()} else {selectTab(index,pane:p)}
+        if background {p.insertTab(location,at:index);p.updateTabs();completion?(true);return true}
+        return navigate(location,pane:p,recordHistory:false,storeTab:false) {success in
+            if success {p.insertTab(location,at:index);p.selectedTab=index;p.updateTabs()}
+            completion?(success)
+        }
     }
     func swapPaneTabs() {
         guard !busy,!left.isLoading,!right.isLoading else {return}
@@ -89,7 +95,8 @@ extension CommanderController {
                 guard let self else{return};self.busy=false
                 switch result {
                 case .success(let rows):
-                    let tabs=self.left.tabs,index=self.left.selectedTab,back=self.left.backHistory,forward=self.left.forwardHistory
+                    let tabs=self.left.tabs,index=self.left.selectedTab,back=self.left.backHistory,forward=self.left.forwardHistory,locks=self.left.lockedTabRoots
+                    self.left.lockedTabRoots=self.right.lockedTabRoots;self.right.lockedTabRoots=locks
                     self.left.tabs=self.right.tabs;self.left.selectedTab=self.right.selectedTab;self.left.backHistory=self.right.backHistory;self.left.forwardHistory=self.right.forwardHistory
                     self.right.tabs=tabs;self.right.selectedTab=index;self.right.backHistory=back;self.right.forwardHistory=forward
                     self.left.applyListing(rows.1,location:rightLocation);self.right.applyListing(rows.0,location:leftLocation);self.left.updateTabs();self.right.updateTabs();self.updateQuickView()
@@ -101,6 +108,7 @@ extension CommanderController {
     }
     func openArchiveInPane(_ entry:FileEntry,source explicitSource:PaneLocation?=nil,target:Pane?=nil,newTab:Bool=false,focus:Bool=true,password:String?=nil) {
         let pane=target ?? activePane,source=explicitSource ?? activePane.location
+        let newTab = newTab || pane.lockedTabRoots[pane.selectedTab] != nil
         guard let tool=Bundle.main.url(forResource:"7zz",withExtension:nil) else {showMessage("Archive tool missing","Reinstall the app.");return}
         let parentOrigin:ArchiveWritebackOrigin
         do {if case .archive(let parent,_)=source {parentOrigin=try archiveOrigin(parent)} else {parentOrigin = .local}}

@@ -1,0 +1,14 @@
+Native folder-tab settings validation — 4 November 2026
+
+Compiled a frozen snapshot of all Sources with only the application @main annotation removed, plus Tests/TabSettingsTests.swift.
+PASS: 18 tab settings assertions
+Exit status: 0.
+
+Actual AppKit Pane/CommanderController checks: local lock and marker; navigating from a locked tab opens a new tab; insertion/removal adjusts lock indices and selected tab; locked tabs resist close; close-others preserves current and locked tabs; session lock representation round trips; mismatched persisted locks are rejected; selected-tab close navigates into adjacent locked tab without creating another tab; marker preference updates visible labels; double-click close defaults off and operates when enabled; right-pane double click targets/activates right pane; pane-tab swap preserves lock metadata; context-menu segment hit testing rejects blank space.
+
+No persistent user preferences were changed. Tests used generated temporary folders removed after execution. The helper test invokes the actual segmented control's completed-click handler; a physical mouse double-click still requires visible application validation.
+
+Follow-up regression run after review corrections:
+PASS: 22 tab settings assertions
+Exit status: 0.
+The rerun includes the original 18 assertions plus actual context-menu dispatch preserving a right-clicked inactive tab, and a current FTP-tab click/double-click sequence that does not initiate a network reload and successfully closes into a local neighbor. FTPClient points to an unused loopback port; no connection should be attempted by these interaction checks.

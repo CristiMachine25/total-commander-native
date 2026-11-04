@@ -77,6 +77,7 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
     var isLoading = false
     var entries: [FileEntry] = []
     private var listedEntries:[FileEntry]=[]
+    var refreshListedEntries:[FileEntry] {listedEntries}
     private var configurationApplied=false
     private var cachedFont:NSFont=mono
     private let systemIcons:NSCache<NSURL,NSImage>={let cache=NSCache<NSURL,NSImage>();cache.countLimit=512;return cache}()
@@ -95,7 +96,8 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
     var forwardHistory: [PaneLocation] = []
     var tabs: [PaneLocation] = []
     var selectedTab = 0
-    let tabControl = NSSegmentedControl()
+    var lockedTabRoots:[Int:URL] = [:]
+    let tabControl = CommanderTabControl()
     let volumePopup = NSPopUpButton(frame: .zero, pullsDown: false)
     var locations: [URL] = []
     var onTab: ((Int) -> Void)?
@@ -190,6 +192,7 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
 
         tabControl.segmentStyle = .smallSquare
         tabControl.trackingMode = .selectOne; tabControl.target = self; tabControl.action = #selector(tabClicked)
+        tabControl.closeOnDoubleClick = { [weak self] in self?.configuration.tabsCloseOnDoubleClick ?? false }
         updateTabs()
         let driveRow = NSStackView(views: [volumePopup, heading]);driveRowView=driveRow; driveRow.orientation = .horizontal; driveRow.spacing = 8
         let stack = NSStackView(views: [driveRow, tabControl, path, fileContainer, footer])
@@ -277,6 +280,7 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
         let icon=NSWorkspace.shared.icon(forFile:entry.url.path)
         systemIcons.setObject(icon,forKey:key);return icon
     }
+    func itemBackground(row:Int)->NSColor {configuration.alternatingRowBackground && row%2 == 1 ? configuration.alternatingBackground.nsColor:configuration.background.nsColor}
     func itemColor(marked:Bool,selected:Bool)->NSColor {selected ? configuration.selectionForeground.nsColor:(marked ? configuration.markedForeground.nsColor:configuration.foreground.nsColor)}
     func showQuickView(_ overlay:NSView) {
         quickViewOverlay?.removeFromSuperview()
@@ -292,7 +296,11 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
     func updateTabs() {
         tabControl.isHidden = viewMode == .tree || !configuration.showFolderTabs || (!configuration.tabsAlwaysVisible && tabs.count < 2)
         tabControl.segmentCount = tabs.count
-        for (i,u) in tabs.enumerated() { tabControl.setLabel(String(u.shortName.prefix(configuration.tabTitleMaximum)), forSegment: i) }
+        for (i,u) in tabs.enumerated() {
+            let label=(configuration.tabsShowLockAsterisk && lockedTabRoots[i] != nil ? "*" : "")+String(u.shortName.prefix(configuration.tabTitleMaximum))
+            tabControl.setLabel(label,forSegment:i)
+            tabControl.setWidth(max(40,(label as NSString).size(withAttributes:[.font:tabControl.font ?? NSFont.systemFont(ofSize:12)]).width+24),forSegment:i)
+        }
         tabControl.selectedSegment = selectedTab
     }
     func storeTab() { tabs[selectedTab] = location; updateTabs() }
@@ -303,7 +311,7 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
     func tableView(_ tableView: NSTableView, rowViewForRow row: Int) -> NSTableRowView? {
         let identifier=NSUserInterfaceItemIdentifier("pane.row")
         let view=(tableView.makeView(withIdentifier:identifier,owner:self) as? PaneSelectionRow) ?? PaneSelectionRow()
-        view.identifier=identifier;view.selectionColor=configuration.selectionBackground.nsColor;return view
+        view.identifier=identifier;view.selectionColor=configuration.selectionBackground.nsColor;view.backgroundColor=itemBackground(row:row);return view
     }
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
         guard row >= 0, row <= entries.count else { return nil }
@@ -394,7 +402,7 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
         let listing = try next.list(showHidden:showHidden)
         applyListing(listing,location:next)
     }
-    func applyListing(_ listing:[FileEntry], location next:PaneLocation) {
+    func applyListing(_ listing:[FileEntry], location next:PaneLocation,updateHeader:Bool=true) {
         briefGrid.resetSelectionAnchor();systemIcons.removeAllObjects()
         let old=currentEntry?.url, same=location.identity == next.identity
         location=next
@@ -404,7 +412,7 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
         if viewMode == .thumbnails,next.localDirectory == nil {setBriefMode(false)}
         marked=same ? marked.intersection(Set(entries.map(\.url))) : []
         path.stringValue=next.displayPath
-        updateDriveHeading()
+        if updateHeader {updateDriveHeading()}
         table.reloadData()
         let row=same ? entries.firstIndex(where:{$0.url == old}).map{$0+1} ?? 0 : 0
         table.selectRowIndexes(IndexSet(integer:row),byExtendingSelection:false);table.scrollRowToVisible(row);updateFooter()
@@ -558,8 +566,13 @@ class CommanderController: NSObject, NSWindowDelegate, NSUserInterfaceValidation
             pane.onActivate = { [weak self] in self?.activate(i, focus: false) }
             pane.onTab = { [weak self, weak pane] index in
                 guard let self, let pane, pane.tabs.indices.contains(index), !self.busy else { return }
-                self.activate(i); self.selectTab(index,pane:pane)
+                self.activate(i)
+                // A click on the current tab is focus, not Refresh. Reloading here
+                // would leave FTP tabs busy before their double-click close arrives.
+                if index != pane.selectedTab {self.selectTab(index,pane:pane)}
             }
+            pane.tabControl.onClose = { [weak self,weak pane] index in guard let self,let pane else{return};self.activate(i);self.closeFolderTab(index,pane:pane) }
+            pane.tabControl.contextMenu = { [weak self,weak pane] index in guard let pane else{return nil};return self?.tabContextMenu(index,pane:pane) }
             pane.onOpen = { [weak self] in self?.openCurrent() }
             pane.onSelectionChanged = { [weak self] in self?.updateQuickView() }
             pane.onLocal = { [weak self,weak pane] url in guard let pane else{return};self?.navigate(url,pane:pane) }
@@ -582,6 +595,7 @@ class CommanderController: NSObject, NSWindowDelegate, NSUserInterfaceValidation
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self = self, event.window === self.window, self.window.attachedSheet == nil else { return event }
             if self.handleFieldEscape(event) {return nil}
+            if self.handleCustomShortcut(event) {return nil}
             let functionKeys: Set<UInt16> = [122,120,99,118,96,97,98,100,101,109]
             if functionKeys.contains(event.keyCode), self.handleKey(event) { return nil }
             return event
@@ -612,6 +626,7 @@ class CommanderController: NSObject, NSWindowDelegate, NSUserInterfaceValidation
         } catch { showError(error) }
     }
     func handleKey(_ event: NSEvent) -> Bool {
+        if handleCustomShortcut(event) { return true }
         guard window.attachedSheet == nil else { return false }
         if activePane.isLoading { if event.keyCode == 53 {activePane.loadTask?.cancel()}; return true }
         let mods = event.modifierFlags.intersection([.command, .control, .option, .shift])
@@ -681,9 +696,11 @@ class CommanderController: NSObject, NSWindowDelegate, NSUserInterfaceValidation
         if activePane.table.selectedRow == 0 { parent(); return }
         guard let entry=activePane.currentEntry else {return}
         if entry.isDirectory { do { navigate(try activePane.location.child(entry)) } catch {showError(error)} }
-        else if NativeOperations.recognizesArchive(name:entry.name) { openArchiveInPane(entry) }
+        else if NativeOperations.recognizesArchive(name:entry.name),runtimeConfig.browseArchivesAsDirectories || activePane.location.localDirectory == nil { openArchiveInPane(entry) }
         else if activePane.location.localDirectory != nil {
-            if !NSWorkspace.shared.open(entry.url) { viewFile(editable:false) }
+            if !NSWorkspace.shared.open(entry.url) {
+                if NativeOperations.recognizesArchive(name:entry.name) {openArchiveInPane(entry)} else {viewFile(editable:false)}
+            }
         } else { viewFile(editable:false) }
     }
     func viewFile(editable:Bool) {
@@ -710,17 +727,22 @@ class CommanderController: NSObject, NSWindowDelegate, NSUserInterfaceValidation
         if activePane.location.localDirectory == nil || otherPane.location.localDirectory == nil { transferBetweenProviders(move:move);return }
         let sources = activePane.selectedURLs
         guard !sources.isEmpty else { NSSound.beep(); return }
-        let target = otherPane.directory
-        prompt(title: "\(move ? "Move" : "Copy") \(sources.count) item\(sources.count == 1 ? "" : "s")", detail: "Destination folder. Choose conflict handling before the transfer starts.\n\(sources.prefix(3).map(\.lastPathComponent).joined(separator: ", "))", value: target.path, action: move ? "Move" : "Copy") { [weak self] value in
-            guard let self = self else { return }
-            let expanded = (value as NSString).expandingTildeInPath
-            guard expanded.hasPrefix("/") else { self.showMessage("Use an absolute path", "The destination must begin with / or ~."); return }
-            let destination = URL(fileURLWithPath: expanded)
-            TransferQueueController.enqueue(sources:sources,destination:destination,move:move) { [weak self] result in
-                self?.refresh(); self?.status.stringValue = result.summary
-                if !result.errors.isEmpty { self?.showMessage("Transfer finished with errors",result.summary) }
+        let target = otherPane.directory,settings=runtimeConfig
+        let enqueue: (String)->Void = { [weak self] value in
+            guard let self else{return}
+            let expanded=(value as NSString).expandingTildeInPath
+            guard expanded.hasPrefix("/") else {self.showMessage("Use an absolute path","The destination must begin with / or ~.");return}
+            let options=NativeTransferOptions(preserveDirectoryDates:settings.copyPreserveDirectoryDates,preserveFileDates:settings.copyPreserveFileDates,preservePermissions:settings.copyPreservePermissions,verifyAfterCopy:settings.copyVerifyAfterCopy,bufferSizeKB:settings.copyBufferSizeKB)
+            let policy:TransferCollisionPolicy
+            switch settings.copyDefaultCollision {case "skip":policy = .skip;case "replace":policy = .replace;case "rename":policy = .rename;default:policy = .ask}
+            TransferQueueController.enqueue(sources:sources,destination:URL(fileURLWithPath:expanded),move:move,options:options,defaultPolicy:policy,confirmPolicy:settings.confirmCopyMove,confirmOverwrite:settings.confirmOverwrite) { [weak self] result in
+                self?.refresh();self?.status.stringValue=result.summary
+                if !result.errors.isEmpty {self?.showMessage("Transfer finished with errors",result.summary)}
             }
         }
+        if settings.confirmCopyMove {
+            prompt(title:"\(move ? "Move" : "Copy") \(sources.count) item\(sources.count == 1 ? "" : "s")",detail:"Destination folder. Choose conflict handling before the transfer starts.\n\(sources.prefix(3).map(\.lastPathComponent).joined(separator:", "))",value:target.path,action:move ? "Move" : "Copy",completion:enqueue)
+        } else {enqueue(target.path)}
     }
     @objc func renameCurrent() {
         guard permitFileAction() else{return}
@@ -738,17 +760,23 @@ class CommanderController: NSObject, NSWindowDelegate, NSUserInterfaceValidation
         }
     }
     func trash() {
-        if activePane.location.localDirectory == nil { deleteProviderEntries();return }
-        let sources = activePane.selectedURLs
-        guard !sources.isEmpty else { NSSound.beep(); return }
-        let alert = NSAlert(); alert.messageText = "Move \(sources.count) item(s) to Trash?"
-        alert.informativeText = sources.prefix(5).map(\.lastPathComponent).joined(separator: "\n") + "\n\nYou can restore these items from the macOS Trash."
-        alert.alertStyle = .warning; alert.addButton(withTitle: "Move to Trash"); alert.addButton(withTitle: "Cancel")
-        alert.beginSheetModal(for: window) { [weak self] response in
-            if response == .alertFirstButtonReturn {
-                self?.runOperation("Moving to Trash", success: "Moved \(sources.count) item(s) to Trash") { try FileService.trash(sources) }
+        guard permitFileAction() else{return}
+        if activePane.location.localDirectory == nil {deleteProviderEntries();return}
+        let sources=activePane.selectedURLs
+        guard !sources.isEmpty else{NSSound.beep();return}
+        let useTrash=runtimeConfig.deleteToTrash
+        let perform:()->Void = { [weak self] in
+            self?.runOperation(useTrash ? "Moving to Trash" : "Deleting permanently",success:useTrash ? "Moved \(sources.count) item(s) to Trash" : "Deleted \(sources.count) item(s)") {
+                if useTrash {try FileService.trash(sources)} else {try FileService.deletePermanently(sources)}
             }
         }
+        // Disabling routine confirmation affects recoverable Trash only. Permanent
+        // deletion always requires a fresh confirmation for the actual selection.
+        if useTrash && !runtimeConfig.confirmDelete {perform();return}
+        let alert=NSAlert();alert.messageText=useTrash ? "Move \(sources.count) item(s) to Trash?" : "Permanently delete \(sources.count) item(s)?"
+        alert.informativeText=sources.prefix(5).map(\.lastPathComponent).joined(separator:"\n") + (useTrash ? "\n\nYou can restore these items from the macOS Trash." : "\n\nThis cannot be undone. These items will not go to Trash.")
+        alert.alertStyle = .warning;alert.addButton(withTitle:useTrash ? "Move to Trash" : "Delete permanently");alert.addButton(withTitle:"Cancel")
+        alert.beginSheetModal(for:window){response in if response == .alertFirstButtonReturn {perform()}}
     }
     func prompt(title: String, detail: String, value: String, action: String, completion: @escaping (String) -> Void) {
         let alert = NSAlert(); alert.messageText = title; alert.informativeText = detail
@@ -979,7 +1007,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         shortcut(17,[.control,.shift],"t"); precondition(c.left.tabs.count == beforeTabs + 1 && c.left.selectedTab == 0)
         shortcut(48,[.control]); precondition(c.left.selectedTab == 1)
         shortcut(48,[.control,.shift]); precondition(c.left.selectedTab == 0)
-        shortcut(13,[.control,.shift],"w"); precondition(c.left.tabs.count == 1)
+        c.runtimeConfig.confirmCloseAllTabs=false; shortcut(13,[.control,.shift],"w"); precondition(c.left.tabs.count == 1)
         shortcut(0,[],"a"); precondition(c.commandField.stringValue == "a")
         shortcut(53,[]); precondition(c.commandField.stringValue.isEmpty)
         c.window.contentView?.layoutSubtreeIfNeeded()
