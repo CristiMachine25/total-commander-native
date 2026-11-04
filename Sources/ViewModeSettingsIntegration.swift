@@ -26,6 +26,42 @@ extension Pane {
         if let state=objc_getAssociatedObject(self,&namedViewStateKey) as? NamedViewState{return state}
         let state=NamedViewState();objc_setAssociatedObject(self,&namedViewStateKey,state,.OBJC_ASSOCIATION_RETAIN_NONATOMIC);return state
     }
+    func captureManualTabView()->CommanderTabViewSettings {
+        let state=namedViewState
+        let baseline=state.automatic ? state.baseline:nil
+        let config=baseline?.configuration ?? configuration
+        let scoped=location.identity
+        let only=state.automatic ? (baseline?.locationIdentity==location.identity ? baseline?.selectedOnly:nil):selectedOnly
+        let defaults=state.defaultBaseline.map{CommanderTabViewDefaults(columns:$0.columns.rawValue,customColumnSetID:$0.configuration.activeCustomColumnSetID,sortColumn:$0.sort,ascending:$0.ascending,secondarySortColumns:$0.secondary,directoriesFirst:$0.configuration.directoriesFirst,fileMask:$0.mask,programsOnly:$0.programs)}
+        return CommanderTabViewSettings(defaultView:defaults,manualModeID:state.manualModeID,customColumnSetID:config.activeCustomColumnSetID,columns:(baseline?.columns ?? viewMode).rawValue,sortColumn:baseline?.sort ?? sortColumn,ascending:baseline?.ascending ?? ascending,secondarySortColumns:baseline?.secondary ?? state.secondary,directoriesFirst:config.directoriesFirst,fileMask:baseline?.mask ?? fileMask,programsOnly:baseline?.programs ?? showProgramsOnly,nameFilter:filter,selectedOnlyNames:only?.map(\.lastPathComponent),selectedNames:table.selectedRowIndexes.compactMap{$0>0 && $0<=entries.count ? entries[$0-1].name:nil},markedNames:marked.map(\.lastPathComponent),locationIdentity:scoped)
+    }
+    func restoreManualTabView(_ input:CommanderTabViewSettings,configuration base:CommanderConfiguration) {
+        guard let value=input.sanitized(configuration:base) else{return}
+        let state=namedViewState,priorMask=fileMask,priorPrograms=showProgramsOnly
+        state.automatic=false;state.currentMode=nil;state.manualModeID=value.manualModeID;state.baseline=nil;state.defaultBaseline=nil;state.secondary=value.secondarySortColumns
+        var config=base;config.activeCustomColumnSetID=value.customColumnSetID;config.directoriesFirst=value.directoriesFirst
+        applyConfiguration(config)
+        if let id=value.manualModeID,let mode=base.viewModes.first(where:{$0.id==id}) {installNamedViewMode(mode)}
+        config=configuration;config.activeCustomColumnSetID=value.customColumnSetID;config.directoriesFirst=value.directoriesFirst;applyConfiguration(config)
+        sortColumn=value.sortColumn;ascending=value.ascending;state.secondary=value.secondarySortColumns
+        if base.tabsRememberFileFilters {fileMask=value.fileMask;showProgramsOnly=value.programsOnly} else {fileMask=priorMask;showProgramsOnly=priorPrograms}
+        filter=value.nameFilter
+        let same=value.locationIdentity==location.identity
+        selectedOnly=same ? value.selectedOnlyNames.map{names in let names=Set(names);return Set(refreshListedEntries.filter{names.contains($0.name)}.map(\.url))}:nil
+        setNamedColumns(PaneViewMode(rawValue:value.columns) ?? .full)
+        applyListing(refreshListedEntries,location:location)
+        if same {
+            let marks=Set(value.markedNames),names=Set(value.selectedNames)
+            marked=Set(entries.filter{marks.contains($0.name)}.map(\.url))
+            let selection=IndexSet(entries.enumerated().compactMap{names.contains($0.element.name) ? $0.offset+1:nil})
+            table.selectRowIndexes(selection.isEmpty ? IndexSet(integer:0):selection,byExtendingSelection:false);updateFooter()
+        }
+        captureNamedViewBaseline()
+        let defaults=value.defaultView ?? CommanderTabViewDefaults()
+        var defaultConfig=base;defaultConfig.activeCustomColumnSetID=defaults.customColumnSetID;defaultConfig.directoriesFirst=defaults.directoriesFirst
+        state.defaultBaseline = .init(configuration:defaultConfig,columns:PaneViewMode(rawValue:defaults.columns) ?? .full,sort:defaults.sortColumn,ascending:defaults.ascending,mask:defaults.fileMask,programs:defaults.programsOnly,selectedOnly:nil,locationIdentity:location.identity,secondary:defaults.secondarySortColumns)
+        updateTabs()
+    }
     var currentNamedViewModeID:String? {namedViewState.currentMode?.id}
     var namedViewIsAutomatic:Bool {namedViewState.automatic}
     fileprivate func captureNamedViewBaseline() {
@@ -48,6 +84,9 @@ extension Pane {
         if let color=mode.background {config.background=color}
         if let color=mode.foreground {config.foreground=color}
         if let color=mode.alternatingBackground {config.alternatingBackground=color;config.alternatingRowBackground=true}
+        if let color=mode.darkBackground {config.darkPalette.background=color}
+        if let color=mode.darkForeground {config.darkPalette.foreground=color}
+        if let color=mode.darkAlternatingBackground {config.darkPalette.alternatingBackground=color;config.alternatingRowBackground=true}
         namedViewState.secondary=mode.secondarySortColumns
         applyConfiguration(config)
         if mode.sortColumn != "unchanged" {sortColumn=mode.sortColumn}
@@ -62,10 +101,12 @@ extension Pane {
         // The standard segmented control has no per-segment background API; render
         // a small native color swatch with optional SF symbol inside the tab instead.
         for index in 0..<tabControl.segmentCount {tabControl.setImage(nil,forSegment:index)}
-        guard tabControl.segmentCount>selectedTab,let mode=namedViewState.currentMode,mode.tabColor != nil || !mode.tabIcon.isEmpty else{return}
+        guard tabControl.segmentCount>selectedTab,let mode=namedViewState.currentMode else{return}
+        let tabColor=AppearanceSettings.isDark(configuration.appearanceMode,appearance:view.effectiveAppearance) ? (mode.darkTabColor ?? mode.tabColor):mode.tabColor
+        guard tabColor != nil || !mode.tabIcon.isEmpty else{return}
         let symbol=mode.tabIcon.isEmpty ? nil:NSImage(systemSymbolName:mode.tabIcon,accessibilityDescription:mode.name)
         let image=NSImage(size:NSSize(width:16,height:16),flipped:false){rect in
-            if let color=mode.tabColor {color.nsColor.setFill();NSBezierPath(roundedRect:rect.insetBy(dx:1,dy:1),xRadius:3,yRadius:3).fill()}
+            if let color=tabColor {color.nsColor.setFill();NSBezierPath(roundedRect:rect.insetBy(dx:1,dy:1),xRadius:3,yRadius:3).fill()}
             symbol?.draw(in:rect.insetBy(dx:2,dy:2));return true
         }
         tabControl.setImage(image,forSegment:selectedTab);let label=tabControl.label(forSegment:selectedTab) ?? ""
@@ -99,6 +140,25 @@ private final class ViewModeMenuAction:NSObject {
     @objc func invoke(){action()}
 }
 extension CommanderController {
+    /// Commit one tab activation as one effective mode transition. Restoring a
+    /// saved manual baseline must not fire that inactive mode's leave commands.
+    func activateTabView(_ saved:CommanderTabViewSettings,pane:Pane,directoryChanged:Bool,tabSwitch:Bool) {
+        let old=pane.namedViewState.currentMode
+        let autoID=runtimeConfig.autoSwitchEnabled ? ViewModeSettings.matchingModeID(rules:runtimeConfig.autoSwitchRules,context:viewContext(pane)):nil
+        let automatic=autoID.flatMap{id in runtimeConfig.viewModes.first{$0.id==id}} ?? ((runtimeConfig.autoSwitchEnabled && runtimeConfig.autoSwitchRestoreDefault) ? runtimeConfig.viewModes.first{$0.id=="default"}:nil)
+        let manual=saved.manualModeID.flatMap{id in runtimeConfig.viewModes.first{$0.id==id}},next=automatic ?? manual
+        let changed=old?.id != next?.id
+        if changed {runModeCommands(old,pane:pane,entering:false,directoryChanged:directoryChanged,tabSwitch:tabSwitch)}
+        pane.restoreManualTabView(saved,configuration:runtimeConfig)
+        if let automatic {pane.installNamedViewMode(automatic);pane.namedViewState.automatic=true}
+        if let next,changed || (directoryChanged && ((try? ViewModeSettings.commands(next.autoRunCommands).everyDirectory) ?? false)) {runModeCommands(next,pane:pane,entering:true,directoryChanged:directoryChanged,tabSwitch:tabSwitch)}
+        if saved.locationIdentity==pane.location.identity {
+            let names=Set(saved.selectedNames),marks=Set(saved.markedNames)
+            pane.marked=Set(pane.entries.filter{marks.contains($0.name)}.map(\.url))
+            let rows=IndexSet(pane.entries.enumerated().compactMap{names.contains($0.element.name) ? $0.offset+1:nil})
+            pane.table.selectRowIndexes(rows.isEmpty ? IndexSet(integer:0):rows,byExtendingSelection:false);pane.updateFooter()
+        }
+    }
     func viewContext(_ pane:Pane)->CommanderViewContext {
         let kind:CommanderViewContext.Kind
         switch pane.location {case .local:kind = .local;case .archive:kind = .archive;case .ftp:kind = .ftp}
@@ -169,8 +229,12 @@ extension CommanderController {
             var config=runtimeConfig
             if remember,let custom=savedColumns[name] ?? nil,custom.isEmpty || config.customColumnSets.contains(where:{$0.id==custom}) {config.activeCustomColumnSetID=custom}
             pane.applyConfiguration(config)
-            if remember,let id=savedModes[name] ?? nil,runtimeConfig.viewModes.contains(where:{$0.id==id}) {_=applyNamedViewMode(id:id,pane:pane)}
-            applyAutomaticViewMode(to:pane,directoryChanged:false)
+            if runtimeConfig.tabsRememberViewSettings,let value=pane.tabViewSettings[pane.selectedTab] {
+                activateTabView(value,pane:pane,directoryChanged:false,tabSwitch:false)
+            } else {
+                if remember,let id=savedModes[name] ?? nil,runtimeConfig.viewModes.contains(where:{$0.id==id}) {_=applyNamedViewMode(id:id,pane:pane)}
+                applyAutomaticViewMode(to:pane,directoryChanged:false)
+            }
         }
     }
     func reconfigureNamedViewModes() {

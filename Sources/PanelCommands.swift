@@ -37,18 +37,18 @@ enum SelectionFile {
 #if !PANEL_COMMANDS_TEST
 import AppKit
 extension CommanderController {
-    @objc func showPrograms() {activePane.fileMask="";activePane.selectedOnly=nil;activePane.showProgramsOnly=true;refreshSource()}
+    @objc func showPrograms() {activePane.fileMask="";activePane.selectedOnly=nil;activePane.showProgramsOnly=true;recordManualViewChange(in:activePane);refreshSource()}
     @objc func customFileMask() {
         let pane=activePane
         prompt(title:"Define selection",detail:"Include masks separated by semicolons. Put exclusions after |.",value:pane.fileMask.isEmpty ? "*.*" : pane.fileMask,action:"OK") { [weak self] mask in
             pane.fileMask=mask;pane.showProgramsOnly=false;pane.selectedOnly=nil
-            UserDefaults.standard.set(mask,forKey:"lastFileMask");self?.reloadPane(pane)
+            UserDefaults.standard.set(mask,forKey:"lastFileMask");self?.recordManualViewChange(in:pane);self?.reloadPane(pane)
         }
     }
-    @objc func lastFileMask() {activePane.fileMask=UserDefaults.standard.string(forKey:"lastFileMask") ?? "*.*";activePane.showProgramsOnly=false;activePane.selectedOnly=nil;refreshSource()}
-    @objc func showSelectedOnly() {activePane.selectedOnly=Set(activePane.selectedEntries.map(\.url));reloadPane(activePane)}
-    @objc func reverseOrder() {activePane.ascending.toggle();activePane.sortEntries();activePane.table.reloadData();activePane.updateFooter()}
-    @objc func unsortedOrder() {activePane.sortColumn="unsorted";refreshSource()}
+    @objc func lastFileMask() {activePane.fileMask=UserDefaults.standard.string(forKey:"lastFileMask") ?? "*.*";activePane.showProgramsOnly=false;activePane.selectedOnly=nil;recordManualViewChange(in:activePane);refreshSource()}
+    @objc func showSelectedOnly() {activePane.selectedOnly=Set(activePane.selectedEntries.map(\.url));recordManualViewChange(in:activePane);reloadPane(activePane)}
+    @objc func reverseOrder() {activePane.ascending.toggle();activePane.sortEntries();activePane.table.reloadData();activePane.updateFooter();recordManualViewChange(in:activePane)}
+    @objc func unsortedOrder() {activePane.sortColumn="unsorted";recordManualViewChange(in:activePane);refreshSource()}
     @objc func saveSelectionFile() {
         let names=activePane.selectedEntries.map(\.name)
         guard !names.isEmpty else{return}

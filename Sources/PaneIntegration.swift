@@ -30,7 +30,7 @@ extension PaneLocation {
 }
 
 extension CommanderController {
-    @discardableResult func navigate(_ next:PaneLocation,pane:Pane?=nil,recordHistory:Bool=true,focus:Bool=true,storeTab:Bool=true,viewModeTabSwitch:Bool=false,completion:((Bool)->Void)?=nil)->Bool {
+    @discardableResult func navigate(_ next:PaneLocation,pane:Pane?=nil,recordHistory:Bool=true,focus:Bool=true,storeTab:Bool=true,viewModeTabSwitch:Bool=false,beforeViewModeCommit:(()->Bool)?=nil,completion:((Bool)->Void)?=nil)->Bool {
         guard !busy else {completion?(false);return false}
         let target=pane ?? activePane
         if storeTab,target.lockedTabRoots[target.selectedTab] != nil,next != target.location {
@@ -41,7 +41,8 @@ extension CommanderController {
         func commit(_ rows:[FileEntry]) {
             if recordHistory && previous != next {target.backHistory.append(previous);target.backHistory=Array(target.backHistory.suffix(runtimeConfig.historyLimit));target.forwardHistory.removeAll()}
             target.applyListing(rows,location:next);if storeTab {target.storeTab()}
-            applyAutomaticViewMode(to:target,directoryChanged:previous != next,tabSwitch:viewModeTabSwitch)
+            let modeHandled=beforeViewModeCommit?() ?? false
+            if !modeHandled && (previous != next || viewModeTabSwitch) {applyAutomaticViewMode(to:target,directoryChanged:previous != next,tabSwitch:viewModeTabSwitch)}
             if remember,runtimeConfig.saveOnExit,let local=next.localDirectory {UserDefaults.standard.set(local.path,forKey:target === left ? "leftPath" : "rightPath")}
             if target === activePane {quickSearchText=""}
             status.stringValue=next.displayPath
@@ -68,26 +69,38 @@ extension CommanderController {
         return true
     }
     func reloadPane(_ pane:Pane) { _=navigate(pane.location,pane:pane,recordHistory:false,focus:false) }
-    func selectTab(_ index:Int,pane:Pane?=nil) {
+    func selectTab(_ index:Int,pane:Pane?=nil,completion:((Bool)->Void)?=nil) {
         let p=pane ?? activePane
-        guard !busy,p.tabs.indices.contains(index) else {return}
-        let next=p.tabs[index]
-        navigate(next,pane:p,recordHistory:false,storeTab:false,viewModeTabSwitch:true) { success in
-            if success,p.tabs.indices.contains(index) {p.selectedTab=index;p.tabs[index]=p.location}
-            p.updateTabs()
+        guard !busy,p.tabs.indices.contains(index) else {completion?(false);return}
+        p.rememberCurrentTabView()
+        let next=p.tabs[index],saved=p.tabViewSettings[index],directoryChanged=p.location != p.tabs[index]
+        navigate(next,pane:p,recordHistory:false,storeTab:false,viewModeTabSwitch:true,beforeViewModeCommit:{
+            p.selectedTab=index;p.tabs[index]=p.location
+            if self.runtimeConfig.tabsRememberViewSettings,let saved {self.activateTabView(saved,pane:p,directoryChanged:directoryChanged,tabSwitch:true);return true}
+            return false
+        }) { success in
+            p.updateTabs();completion?(success)
         }
     }
     @discardableResult func openLocationInNewTab(_ location:PaneLocation,pane:Pane?=nil,background:Bool=false,completion:((Bool)->Void)?=nil)->Bool {
-        let p=pane ?? activePane;guard !busy else {completion?(false);return false}
+        let p=pane ?? activePane;guard !busy,!p.isLoading else {completion?(false);return false}
+        p.rememberCurrentTabView()
+        let inherited=p.captureManualTabView()
         let index=runtimeConfig.newTabBesideCurrent ? p.selectedTab+1 : p.tabs.count
-        if background {p.insertTab(location,at:index);p.updateTabs();completion?(true);return true}
-        return navigate(location,pane:p,recordHistory:false,storeTab:false) {success in
-            if success {p.insertTab(location,at:index);p.selectedTab=index;p.updateTabs()}
-            completion?(success)
+        if background {
+            p.insertTab(location,at:index)
+            if runtimeConfig.tabsRememberViewSettings {p.tabViewSettings[index]=inherited}
+            p.updateTabs();completion?(true);return true
         }
+        return navigate(location,pane:p,recordHistory:false,storeTab:false,beforeViewModeCommit:{
+            p.insertTab(location,at:index);p.selectedTab=index
+            if self.runtimeConfig.tabsRememberViewSettings {p.tabViewSettings[index]=inherited;self.activateTabView(inherited,pane:p,directoryChanged:inherited.locationIdentity != location.identity,tabSwitch:false);p.updateTabs();return true}
+            p.updateTabs();return false
+        },completion:completion)
     }
     func swapPaneTabs() {
         guard !busy,!left.isLoading,!right.isLoading else {return}
+        left.rememberCurrentTabView();right.rememberCurrentTabView()
         let leftLocation=left.location,rightLocation=right.location,hidden=showHidden
         busy=true;status.stringValue="Exchanging tabs…"
         DispatchQueue.global(qos:.userInitiated).async { [weak self] in
@@ -96,11 +109,18 @@ extension CommanderController {
                 guard let self else{return};self.busy=false
                 switch result {
                 case .success(let rows):
+                    let viewSettings=self.left.tabViewSettings
+                    self.left.tabViewSettings=self.right.tabViewSettings;self.right.tabViewSettings=viewSettings
                     let tabs=self.left.tabs,index=self.left.selectedTab,back=self.left.backHistory,forward=self.left.forwardHistory,locks=self.left.lockedTabRoots
                     self.left.lockedTabRoots=self.right.lockedTabRoots;self.right.lockedTabRoots=locks
                     self.left.tabs=self.right.tabs;self.left.selectedTab=self.right.selectedTab;self.left.backHistory=self.right.backHistory;self.left.forwardHistory=self.right.forwardHistory
                     self.right.tabs=tabs;self.right.selectedTab=index;self.right.backHistory=back;self.right.forwardHistory=forward
-                    self.left.applyListing(rows.1,location:rightLocation);self.right.applyListing(rows.0,location:leftLocation);self.left.updateTabs();self.right.updateTabs();self.applyAutomaticViewMode(to:self.left);self.applyAutomaticViewMode(to:self.right);self.updateQuickView()
+                    self.left.applyListing(rows.1,location:rightLocation);self.right.applyListing(rows.0,location:leftLocation);self.left.updateTabs();self.right.updateTabs()
+                    for pane in [self.left,self.right] {
+                        if self.runtimeConfig.tabsRememberViewSettings,let saved=pane.tabViewSettings[pane.selectedTab] {self.activateTabView(saved,pane:pane,directoryChanged:true,tabSwitch:true)}
+                        else {self.applyAutomaticViewMode(to:pane)}
+                    }
+                    self.updateQuickView()
                 case .failure(let error):self.showError(error)
                 }
                 self.drainArchiveUpdates()
@@ -138,8 +158,8 @@ extension CommanderController {
                 case .success(let result):
                     let session=result.0;session.displayOrigin=source.displayPath+(source.displayPath.hasSuffix("/") ? "" : "/")+entry.name;self.archiveParents[ObjectIdentifier(session)]=source;self.archiveLeases[ObjectIdentifier(session)]=result.1
                     self.registerArchiveOrigin(result.2,session:session)
-                    if newTab {pane.tabs.append(.archive(session,path:""));pane.selectedTab=pane.tabs.count-1;pane.updateTabs()}
-                    self.navigate(.archive(session,path:""),pane:pane,recordHistory:!newTab,focus:focus)
+                    if newTab {self.openLocationInNewTab(.archive(session,path:""),pane:pane)}
+                    else {self.navigate(.archive(session,path:""),pane:pane,recordHistory:true,focus:focus)}
                 case .failure(let error):
                     if error is ArchivePasswordRequired {
                         self.requestArchivePassword(name:entry.name,retry:password != nil) { [weak self,weak pane] value in

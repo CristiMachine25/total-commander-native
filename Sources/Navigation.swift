@@ -9,7 +9,7 @@ extension CommanderController {
         while history.last == previous {history.removeLast()}
         guard let next=history.popLast() else{return}
         let future=pane.forwardHistory+[previous]
-        navigate(next,pane:pane,recordHistory:false) {success in if success {pane.backHistory=history;pane.forwardHistory=future}}
+        navigate(next,pane:pane,recordHistory:false,completion:{success in if success {pane.backHistory=history;pane.forwardHistory=future}})
     }
     @objc func forwardFolder() {
         guard !busy,!activePane.isLoading else{return}
@@ -18,7 +18,7 @@ extension CommanderController {
         while future.last == previous {future.removeLast()}
         guard let next=future.popLast() else{return}
         let history=pane.backHistory+[previous]
-        navigate(next,pane:pane,recordHistory:false) {success in if success {pane.forwardHistory=future;pane.backHistory=history}}
+        navigate(next,pane:pane,recordHistory:false,completion:{success in if success {pane.forwardHistory=future;pane.backHistory=history}})
     }
     @objc func newTab() {openLocationInNewTab(activePane.location)}
     @objc func closeTab() {closeFolderTab(activePane.selectedTab,pane:activePane)}

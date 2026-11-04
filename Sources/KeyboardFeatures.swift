@@ -189,10 +189,19 @@ extension CommanderController {
     }
     @objc func quickFilter() {
         prompt(title: "Quick Filter", detail: "Show names containing:", value: activePane.filter, action: "Filter") { [weak self] text in
-            self?.activePane.filter = text; self?.refreshSource()
+            guard let self else{return};self.activePane.filter=text;self.recordManualViewChange(in:self.activePane);self.refreshSource()
         }
     }
-    @objc func showAllFiles() { activePane.filter = "";activePane.fileMask="";activePane.showProgramsOnly=false;activePane.selectedOnly=nil; refreshSource() }
+    @objc func showAllFiles() { activePane.filter = "";activePane.fileMask="";activePane.showProgramsOnly=false;activePane.selectedOnly=nil;recordManualViewChange(in:activePane);refreshSource() }
+    /// AppKit treats Control-Shift-Tab as backward key-view traversal before an
+    /// NSTableView's keyDown. Claim it only while a file pane owns keyboard focus.
+    func handlePaneTabShortcut(_ event:NSEvent)->Bool {
+        let modifiers=event.modifierFlags.intersection([.control,.shift,.option,.command])
+        guard event.keyCode==48,modifiers == [.control] || modifiers == [.control,.shift],
+              event.windowNumber==window.windowNumber,window.attachedSheet==nil,
+              window.firstResponder === activePane.fileResponder else{return false}
+        return handleKey(event)
+    }
     func cycleTab(_ delta: Int) {
         let p=activePane
         guard !busy, p.tabs.count > 1 else { return }
@@ -300,6 +309,7 @@ extension CommanderController {
             let locals=p.tabs.enumerated().compactMap { index,location -> (Int,String)? in location.localDirectory.map { (index,$0.path) } }
             UserDefaults.standard.set(locals.map{$0.1},forKey:name+"Tabs")
             UserDefaults.standard.set(p.savedLocalTabLocks,forKey:name+"TabLocks")
+            UserDefaults.standard.set(p.savedLocalTabViews(),forKey:name+"TabViews")
             UserDefaults.standard.set(locals.firstIndex(where:{$0.0 == p.selectedTab}) ?? 0,forKey:name+"TabIndex")
         }
         UserDefaults.standard.set(showHidden,forKey:"showHidden")
@@ -312,6 +322,7 @@ extension CommanderController {
                 p.tabs=paths.map { .local(URL(fileURLWithPath:$0)) }; p.selectedTab=min(max(0,UserDefaults.standard.integer(forKey:name+"TabIndex")),p.tabs.count-1)
                 if (try? p.load(p.tabs[p.selectedTab].localDirectory!,showHidden:showHidden)) == nil { p.tabs[p.selectedTab]=p.location }
                 p.restoreLocalTabLocks(UserDefaults.standard.dictionary(forKey:name+"TabLocks") as? [String:String] ?? [:])
+                p.restoreLocalTabViews(UserDefaults.standard.data(forKey:name+"TabViews"),configuration:runtimeConfig)
                 p.updateTabs()
             } else if let local=p.location.localDirectory { try? p.load(local,showHidden:showHidden) }
         }

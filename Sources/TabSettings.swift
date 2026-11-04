@@ -33,18 +33,21 @@ private final class TabMenuAction:NSObject {
 }
 extension Pane {
     func insertTab(_ location:PaneLocation,at index:Int) {
+        tabViewSettings=Dictionary(uniqueKeysWithValues:tabViewSettings.map{($0.key>=index ? $0.key+1:$0.key,$0.value)})
         lockedTabRoots=Dictionary(uniqueKeysWithValues:lockedTabRoots.map{($0.key>=index ? $0.key+1 : $0.key,$0.value)})
         tabs.insert(location,at:index)
         if index<=selectedTab {selectedTab += 1}
     }
     func removeTab(at index:Int) {
+        tabViewSettings=Dictionary(uniqueKeysWithValues:tabViewSettings.filter{$0.key != index}.map{($0.key>index ? $0.key-1:$0.key,$0.value)})
         lockedTabRoots=Dictionary(uniqueKeysWithValues:lockedTabRoots.filter{$0.key != index}.map{($0.key>index ? $0.key-1 : $0.key,$0.value)})
         tabs.remove(at:index)
         if index<selectedTab {selectedTab -= 1}
         selectedTab=min(selectedTab,tabs.count-1)
     }
     func retainTabs(_ indices:[Int]) {
-        let prior=tabs,locks=lockedTabRoots,oldSelected=selectedTab
+        let prior=tabs,locks=lockedTabRoots,oldSelected=selectedTab,views=tabViewSettings
+        tabViewSettings=Dictionary(uniqueKeysWithValues:indices.enumerated().compactMap{new,old in views[old].map{(new,$0)}})
         tabs=indices.map{prior[$0]};selectedTab=indices.firstIndex(of:oldSelected) ?? 0
         lockedTabRoots=Dictionary(uniqueKeysWithValues:indices.enumerated().compactMap{new,old in locks[old].map{(new,$0)}})
         updateTabs()
@@ -85,9 +88,9 @@ extension CommanderController {
         guard !busy,!pane.isLoading,pane.tabs.count>1,pane.tabs.indices.contains(index) else{return}
         guard pane.lockedTabRoots[index]==nil else{status.stringValue="Unlock this tab before closing it.";return}
         if index != pane.selectedTab {pane.removeTab(at:index);pane.updateTabs();return}
-        let nextIndex=index==pane.tabs.count-1 ? index-1 : index+1,next=pane.tabs[nextIndex]
-        navigate(next,pane:pane,recordHistory:false,storeTab:false) {success in
-            if success {pane.selectedTab=nextIndex;pane.removeTab(at:index)}
+        let nextIndex=index==pane.tabs.count-1 ? index-1 : index+1
+        selectTab(nextIndex,pane:pane) {success in
+            if success {pane.removeTab(at:index)}
             pane.updateTabs()
         }
     }
@@ -98,7 +101,7 @@ extension CommanderController {
             activate(pane === left ? 0 : 1)
             if index != pane.selectedTab {
                 let snapshot=pane.tabs
-                navigate(snapshot[index],pane:pane,recordHistory:false,storeTab:false) { [weak self,weak pane] success in
+                selectTab(index,pane:pane) { [weak self,weak pane] success in
                     guard let self,let pane,success,pane.tabs==snapshot else{return}
                     pane.selectedTab=index;pane.updateTabs()
                     self.closeOtherTabs(pane)
