@@ -4,6 +4,7 @@ extension CommanderController {
     func applyConfiguration(_ configuration:CommanderConfiguration) {
         let oldHidden=showHidden
         runtimeConfig=configuration;showHidden=configuration.showHidden
+        barScroll?.isHidden = !configuration.showButtonBar
         buttonBar?.isHidden = !configuration.showButtonBar
         status.isHidden = !configuration.showStatusBar
         commandField?.isHidden = !configuration.showCommandLine

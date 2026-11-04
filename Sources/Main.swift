@@ -478,6 +478,10 @@ class CommanderController: NSObject, NSWindowDelegate, NSUserInterfaceValidation
     var runtimeConfig = CommanderConfiguration.load()
     var menuRow: NSStackView!
     var buttonBar: NSStackView!
+    var barScroll: NSScrollView!
+    var barHeight: NSLayoutConstraint?
+    var barConfiguration = CommanderButtonBar()
+    var barEditor: ButtonBarEditor?
     var functionBar: NSStackView!
     var quickSearchText=""
     var quickSearchTime:TimeInterval=0
@@ -516,13 +520,14 @@ class CommanderController: NSObject, NSWindowDelegate, NSUserInterfaceValidation
             let b = NSButton(title: title, target: self, action: #selector(openMenuButton(_:)))
             b.isBordered = false; b.font = .systemFont(ofSize: 13); top.addArrangedSubview(b)
         }
-        let toolbar = NSStackView(); buttonBar = toolbar; toolbar.orientation = .horizontal; toolbar.spacing = 10
-        for (name, symbol, action) in [("Refresh", "arrow.clockwise", #selector(refreshSource)), ("Brief", "list.bullet", #selector(briefView)), ("Full", "list.bullet.rectangle", #selector(fullView)), ("Invert", "checklist", #selector(invertSelection)), ("Back", "arrow.left", #selector(backFolder)), ("Forward", "arrow.right", #selector(forwardFolder)), ("Pack", "archivebox", #selector(packFiles)), ("Unpack", "shippingbox", #selector(unpackFiles)), ("FTP", "network", #selector(connectFTP)), ("FTPNew", "network.badge.shield.half.filled", #selector(connectFTP)), ("Search", "magnifyingglass", #selector(searchFiles)), ("Rename", "pencil", #selector(multiRename)), ("Compare", "rectangle.split.2x1", #selector(synchronizeDirectories)), ("CopyNames", "doc.on.clipboard", #selector(copyFullNames))] {
-            let icon = Bundle.main.resourceURL.flatMap { NSImage(contentsOf: $0.appendingPathComponent("icons/" + name + ".png")) } ?? NSImage(systemSymbolName: symbol, accessibilityDescription: name)!
-            icon.size = NSSize(width: 22, height: 22)
-            let b = NSButton(image: icon, target: self, action: action)
-            b.bezelStyle = .smallSquare; b.toolTip = name == "Compare" ? "Synchronize directories" : name; toolbar.addArrangedSubview(b)
-        }
+        barConfiguration = remember ? CommanderButtonBar.load() : CommanderButtonBar()
+        let strip=CommanderButtonStrip();buttonBar=strip;strip.orientation = .horizontal;strip.spacing=6
+        strip.configure = { [weak self] in self?.configureButtonBar() }
+        let toolbar=NSScrollView();barScroll=toolbar;toolbar.hasHorizontalScroller=true;toolbar.hasVerticalScroller=false;toolbar.autohidesScrollers=true;toolbar.drawsBackground=false;toolbar.documentView=strip
+        strip.translatesAutoresizingMaskIntoConstraints=false
+        NSLayoutConstraint.activate([strip.leadingAnchor.constraint(equalTo:toolbar.contentView.leadingAnchor),strip.topAnchor.constraint(equalTo:toolbar.contentView.topAnchor)])
+        barHeight=toolbar.heightAnchor.constraint(equalToConstant:48);barHeight?.isActive=true
+        rebuildButtonBar()
         let command = NSTextField(); command.placeholderString = "Command line — cd /path or run a command"; command.font = mono
         command.target = self; command.action = #selector(runCommand(_:)); commandField = command
         let panes = NSSplitView(); splitView = panes; panes.isVertical = true; panes.dividerStyle = .thin; panes.addArrangedSubview(left.view); panes.addArrangedSubview(right.view)

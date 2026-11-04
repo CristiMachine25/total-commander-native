@@ -97,3 +97,6 @@ xcrun swiftc -swift-version 5 -framework AppKit -framework ImageIO "${PANE_SOURC
 "$TEST_WORK/context-menu"
 "${FTP_TEST_PYTHON:-python3}" Tests/ProviderIntegration.py "$TEST_WORK/ui" "$PWD/Resources/7zz"
 printf '%s\n' 'All native backend and provider integration suites passed.'
+
+xcrun swiftc -swift-version 5 Sources/ButtonBarModel.swift Tests/ButtonBarTests.swift -o "$TEST_WORK/button-bar"
+"$TEST_WORK/button-bar"
