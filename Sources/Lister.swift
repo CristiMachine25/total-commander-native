@@ -166,7 +166,7 @@ final class ListerController: NSWindowController, NSWindowDelegate {
         window.minSize = NSSize(width: 620, height: 380)
         window.delegate = self
         window.isReleasedWhenClosed = false
-        window.appearance = NSAppearance(named: .aqua)
+        window.appearance = nil
         let path = NSTextField(labelWithString: fileDocument.url.path)
         path.lineBreakMode = .byTruncatingMiddle
         path.isSelectable = true

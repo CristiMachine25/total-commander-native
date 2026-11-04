@@ -46,9 +46,11 @@ final class DirectoryTreeView:NSView,NSOutlineViewDataSource,NSOutlineViewDelega
         NSLayoutConstraint.activate([stack.leadingAnchor.constraint(equalTo:leadingAnchor),stack.trailingAnchor.constraint(equalTo:trailingAnchor),stack.topAnchor.constraint(equalTo:topAnchor),stack.bottomAnchor.constraint(equalTo:bottomAnchor),scroll.widthAnchor.constraint(equalTo:stack.widthAnchor),scroll.heightAnchor.constraint(greaterThanOrEqualToConstant:150),message.widthAnchor.constraint(equalTo:stack.widthAnchor)])
     }
     required init?(coder:NSCoder){fatalError()}
+    override func viewDidChangeEffectiveAppearance(){super.viewDidChangeEffectiveAppearance();refreshAppearanceRendering()}
+    func refreshAppearanceRendering(){outline.backgroundColor=AppearanceSettings.palette(configuration,appearance:effectiveAppearance).background.nsColor;outline.reloadData()}
     func applyConfiguration(_ config:CommanderConfiguration) {
         let ignoreChanged=configuration.ignoreListEnabled != config.ignoreListEnabled || configuration.ignorePatterns != config.ignorePatterns
-        configuration=config;outline.rowHeight=max(config.rowHeight,Double(config.iconSize+4));outline.backgroundColor=config.background.nsColor
+        configuration=config;outline.rowHeight=max(config.rowHeight,Double(config.iconSize+4));outline.backgroundColor=AppearanceSettings.palette(config,appearance:effectiveAppearance).background.nsColor
         let changed=showHidden != config.showHidden || ignoreChanged;showHidden=config.showHidden
         outline.reloadData();if changed,root != nil {refresh()}
     }
@@ -76,18 +78,18 @@ final class DirectoryTreeView:NSView,NSOutlineViewDataSource,NSOutlineViewDelega
         let cell=NSTableCellView(),text=NSTextField(labelWithString:node.name+(node.loading ? " …":"")),icon=NSImageView()
         icon.image=configuration.iconMode == .none ? nil:NSImage(systemSymbolName:"folder.fill",accessibilityDescription:"Folder");icon.contentTintColor = .systemBlue
         let font=NSFont(name:configuration.fileFontName,size:configuration.fileFontSize) ?? NSFont.systemFont(ofSize:configuration.fileFontSize)
-        text.font=configuration.fileFontBold ? NSFontManager.shared.convert(font,toHaveTrait:.boldFontMask):font;text.textColor=outline.row(forItem:node)==outline.selectedRow ? configuration.selectionForeground.nsColor:configuration.foreground.nsColor
+        text.font=configuration.fileFontBold ? NSFontManager.shared.convert(font,toHaveTrait:.boldFontMask):font;text.textColor=outline.row(forItem:node)==outline.selectedRow ? AppearanceSettings.palette(configuration,appearance:effectiveAppearance).selectionForeground.nsColor:AppearanceSettings.palette(configuration,appearance:effectiveAppearance).foreground.nsColor
         cell.addSubview(icon);cell.addSubview(text);cell.imageView=icon;cell.textField=text;text.lineBreakMode = .byTruncatingMiddle;cell.toolTip=node.location.displayPath
         icon.translatesAutoresizingMaskIntoConstraints=false;text.translatesAutoresizingMaskIntoConstraints=false
         NSLayoutConstraint.activate([icon.leadingAnchor.constraint(equalTo:cell.leadingAnchor),icon.centerYAnchor.constraint(equalTo:cell.centerYAnchor),icon.widthAnchor.constraint(equalToConstant:CGFloat(configuration.iconSize)),icon.heightAnchor.constraint(equalToConstant:CGFloat(configuration.iconSize)),text.leadingAnchor.constraint(equalTo:icon.trailingAnchor,constant:5),text.trailingAnchor.constraint(equalTo:cell.trailingAnchor),text.centerYAnchor.constraint(equalTo:cell.centerYAnchor)])
         return cell
     }
     func outlineViewItemWillExpand(_ notification:Notification){if let node=notification.userInfo?["NSObject"] as? DirectoryTreeNode {load(node)}}
-    func outlineView(_ outlineView:NSOutlineView,rowViewForItem item:Any)->NSTableRowView? {let view=PaneSelectionRow();view.selectionColor=configuration.selectionBackground.nsColor;return view}
+    func outlineView(_ outlineView:NSOutlineView,rowViewForItem item:Any)->NSTableRowView? {let view=PaneSelectionRow();view.selectionColor=AppearanceSettings.palette(configuration,appearance:effectiveAppearance).selectionBackground.nsColor;return view}
     func outlineViewSelectionDidChange(_ notification:Notification){
         if let node=outline.item(atRow:outline.selectedRow) as? DirectoryTreeNode{message.stringValue=node.error ?? node.location.displayPath}
         let range=outline.rows(in:outline.visibleRect)
-        if range.location != NSNotFound {for row in range.location..<min(outline.numberOfRows,range.location+range.length){(outline.view(atColumn:0,row:row,makeIfNecessary:false) as? NSTableCellView)?.textField?.textColor=row==outline.selectedRow ? configuration.selectionForeground.nsColor:configuration.foreground.nsColor}}
+        if range.location != NSNotFound {for row in range.location..<min(outline.numberOfRows,range.location+range.length){(outline.view(atColumn:0,row:row,makeIfNecessary:false) as? NSTableCellView)?.textField?.textColor=row==outline.selectedRow ? AppearanceSettings.palette(configuration,appearance:effectiveAppearance).selectionForeground.nsColor:AppearanceSettings.palette(configuration,appearance:effectiveAppearance).foreground.nsColor}}
     }
     private func load(_ node:DirectoryTreeNode){
         guard !node.loaded,!node.loading,nodeCount<20000 else{return}

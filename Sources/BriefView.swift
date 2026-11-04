@@ -54,7 +54,7 @@ final class BriefGridView:NSView {
     func cellRect(_ index:Int)->NSRect {NSRect(x:CGFloat(index/rowsPerColumn)*columnWidth,y:CGFloat(index%rowsPerColumn)*rowHeight,width:columnWidth,height:rowHeight)}
     func revealSelection() {if let pane,pane.table.selectedRow >= 0 {scrollToVisible(cellRect(pane.table.selectedRow))};needsDisplay=true}
     override func draw(_ dirtyRect:NSRect) {
-        (pane?.configuration.background.nsColor ?? .white).setFill();dirtyRect.fill()
+        (pane?.renderingPalette.background.nsColor ?? .white).setFill();dirtyRect.fill()
         guard let pane else{return}
         let font=pane.configuredFont
         let paragraph=NSMutableParagraphStyle();paragraph.lineBreakMode = .byTruncatingMiddle
@@ -67,7 +67,7 @@ final class BriefGridView:NSView {
                 let selected=pane.table.selectedRowIndexes.contains(index)
                 let entry=index == 0 ? nil : pane.entries[index-1]
                 let marked=entry.map{pane.marked.contains($0.url)} ?? false
-                if selected { pane.configuration.selectionBackground.nsColor.setFill();rect.fill() }
+                if selected { pane.renderingPalette.selectionBackground.nsColor.setFill();rect.fill() }
                 else {pane.itemBackground(row:index).setFill();rect.fill()}
                 var icon=index == 0 ? upIcon : (entry?.isDirectory == true ? folderIcon : fileIcon)
                 if pane.configuration.iconMode == .none {icon=nil}

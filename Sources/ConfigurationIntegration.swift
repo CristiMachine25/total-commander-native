@@ -24,6 +24,7 @@ extension CommanderController {
         if oldHidden != showHidden {refresh()}
         refreshController.configure()
         reconfigureNamedViewModes()
+        applyCommanderAppearance()
     }
     func configuredExternalApplication(editable:Bool)->URL? {
         let enabled=editable ? runtimeConfig.externalEditorEnabled : runtimeConfig.externalViewerEnabled

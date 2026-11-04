@@ -72,13 +72,13 @@ final class ThumbnailGridView:NSView {
         };return nil
     }
     override func draw(_ dirtyRect:NSRect) {
-        (pane?.configuration.background.nsColor ?? .white).setFill();dirtyRect.fill();guard let pane else{return}
+        (pane?.renderingPalette.background.nsColor ?? .white).setFill();dirtyRect.fill();guard let pane else{return}
         let first=max(0,Int(dirtyRect.minY/cellHeight)*columns),last=min(pane.entries.count,Int(dirtyRect.maxY/cellHeight+1)*columns-1)
         guard first<=last else{return}
         let paragraph=NSMutableParagraphStyle();paragraph.alignment = .center;paragraph.lineBreakMode = .byTruncatingMiddle
         for index in first...last {
             let rect=cellRect(index),entry=index==0 ? nil:pane.entries[index-1],selected=pane.table.selectedRowIndexes.contains(index)
-            if selected {pane.configuration.selectionBackground.nsColor.setFill();rect.insetBy(dx:2,dy:2).fill()}
+            if selected {pane.renderingPalette.selectionBackground.nsColor.setFill();rect.insetBy(dx:2,dy:2).fill()}
             let picture=entry.flatMap{image($0)}
             let icon=picture ?? NSImage(systemSymbolName:index==0 ? "arrow.up.backward":(entry?.isDirectory==true ? "folder.fill":"doc"),accessibilityDescription:nil)
             let imageRect=NSRect(x:rect.midX-CGFloat(pixels)/2,y:rect.minY+6,width:CGFloat(pixels),height:CGFloat(pixels))

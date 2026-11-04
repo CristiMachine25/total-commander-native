@@ -114,10 +114,12 @@ enum DisplaySettingsEditors {
             let maskEnabled=form.check("Override file filter",original.fileMask != nil),mask=form.text("File filter",original.fileMask ?? "*")
             let (backgroundEnabled,background)=form.optionalColor("background",original.background),(foregroundEnabled,foreground)=form.optionalColor("foreground",original.foreground)
             let (alternateEnabled,alternate)=form.optionalColor("alternate background",original.alternatingBackground),(tabColorEnabled,tabColor)=form.optionalColor("tab color",original.tabColor)
+            let (darkBackgroundEnabled,darkBackground)=form.optionalColor("dark background",original.darkBackground),(darkForegroundEnabled,darkForeground)=form.optionalColor("dark foreground",original.darkForeground),(darkAlternateEnabled,darkAlternate)=form.optionalColor("dark alternate background",original.darkAlternatingBackground),(darkTabEnabled,darkTab)=form.optionalColor("dark tab color",original.darkTabColor)
             let tabIcon=form.text("Tab icon (SF Symbol)",original.tabIcon),commands=form.text("Auto-run commands",original.autoRunCommands)
             commands.placeholderString="cm_100percent|cm_50percent"
             return(form,{
                 var c=original;c.id=defaultMode.state == .on ? "default":ordinaryID;c.name=name.stringValue.trimmingCharacters(in:.whitespacesAndNewlines);c.columnsView=viewValues[view.indexOfSelectedItem];c.customColumnSetID=setIDs[columns.indexOfSelectedItem];c.sortColumn=sortIDs[sort.indexOfSelectedItem]
+                c.darkBackground=darkBackgroundEnabled.state == .on ? ConfigurationColor(darkBackground.color):nil;c.darkForeground=darkForegroundEnabled.state == .on ? ConfigurationColor(darkForeground.color):nil;c.darkAlternatingBackground=darkAlternateEnabled.state == .on ? ConfigurationColor(darkAlternate.color):nil;c.darkTabColor=darkTabEnabled.state == .on ? ConfigurationColor(darkTab.color):nil
                 c.secondarySortColumns=secondary.stringValue.split(separator:";").map{$0.trimmingCharacters(in:.whitespacesAndNewlines)}
                 c.alternatingBackground=alternateEnabled.state == .on ? ConfigurationColor(alternate.color):nil;c.tabColor=tabColorEnabled.state == .on ? ConfigurationColor(tabColor.color):nil;c.tabIcon=tabIcon.stringValue;c.autoRunCommands=commands.stringValue
                 c.ascending=ascending.indexOfSelectedItem==0 ? nil:ascending.indexOfSelectedItem==1;c.directoriesFirst=directories.indexOfSelectedItem==0 ? nil:directories.indexOfSelectedItem==1

@@ -289,7 +289,7 @@ final class SynchronizationController: NSWindowController, NSWindowDelegate, NST
         self.leftRoot = left; self.rightRoot = right; self.onComplete = onComplete
         let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 980, height: 600), styleMask: [.titled,.closable,.resizable,.miniaturizable], backing: .buffered, defer: false)
         w.title = "Synchronize Directories"; w.isReleasedWhenClosed = false
-        super.init(window: w); w.delegate = self; w.appearance = NSAppearance(named: .aqua)
+        super.init(window: w); w.delegate = self; w.appearance = nil
         content.state = .on; newer.state = .on
         content.target = self; content.action = #selector(optionsChanged)
         newer.target = self; newer.action = #selector(optionsChanged)

@@ -170,7 +170,7 @@ final class ArchiveBrowserController: NSWindowController, NSWindowDelegate, NSTa
     private init(archive:URL,destination:URL,completion:@escaping ()->Void) {
         self.destination=destination;self.completion=completion
         let w=NSWindow(contentRect:NSRect(x:0,y:0,width:840,height:540),styleMask:[.titled,.closable,.resizable,.miniaturizable],backing:.buffered,defer:false)
-        w.title="Archive — "+archive.lastPathComponent;w.isReleasedWhenClosed=false;w.appearance=NSAppearance(named:.aqua)
+        w.title="Archive — "+archive.lastPathComponent;w.isReleasedWhenClosed=false;w.appearance=nil
         super.init(window:w);w.delegate=self
         let bar=NSStackView();bar.orientation = .horizontal;bar.spacing=10
         for (title,selector) in [("Parent",#selector(parent)),("View F3",#selector(viewMember)),("Extract selected…",#selector(extractSelected)),("Extract all…",#selector(extractAll)),("Test archive",#selector(testArchive))] {
