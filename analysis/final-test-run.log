@@ -1,0 +1,72 @@
+PASS: 34 filesystem checks; temporary fixtures cleaned on exit. Trash was not exercised.
+EditorTests: UTF-8, binary, size boundaries, conflict, permissions, read-only, and symlink checks passed
+UI smoke tests passed
+PASS: 18 native operation assertions
+PASS: 25 Lister assertions
+Rename masks: 66 checks passed
+PASS: 35 transfer assertions
+PASS: 33 synchronization assertions
+Checksum tests passed: 4 known vectors, manifest round trips, mismatch and traversal
+PASS: 27 archive browser assertions
+FTP: 44 checks passed (disposable localhost server)
+PASS: 28 pane location assertions
+PASS: 35 archive mutation assertions
+PASS: 18 archive editing assertions
+Remote editing: 20 checks passed
+Provider transfers: 27 checks passed
+Brief layout: 21 checks passed
+Shortcut contract: 349 checks passed
+File-list comparison: 8 checks passed
+PASS: 28 reference menu assertions; 100 original items, 47 supported command IDs
+PASS: 26 archive writeback assertions
+[I 2026-11-03 18:00:44] 127.0.0.1:49906-[] FTP session opened (connect)
+[I 2026-11-03 18:00:44] 127.0.0.1:49906-[fixture] USER 'fixture' logged in.
+[I 2026-11-03 18:00:44] 127.0.0.1:49906-[fixture] CWD /private/var/folders/sn/_l3lknnd5wv4ckd0q288ts_w0000gn/T/tc-pane-integration-z41qo3en/remote 250
+[I 2026-11-03 18:00:44] 127.0.0.1:49906-[fixture] FTP session closed (disconnect).
+[I 2026-11-03 18:00:44] 127.0.0.1:49909-[] FTP session opened (connect)
+[I 2026-11-03 18:00:44] 127.0.0.1:49909-[fixture] USER 'fixture' logged in.
+[I 2026-11-03 18:00:44] 127.0.0.1:49909-[fixture] CWD /private/var/folders/sn/_l3lknnd5wv4ckd0q288ts_w0000gn/T/tc-pane-integration-z41qo3en/remote 250
+[I 2026-11-03 18:00:44] 127.0.0.1:49909-[fixture] FTP session closed (disconnect).
+[I 2026-11-03 18:00:44] 127.0.0.1:49912-[] FTP session opened (connect)
+[I 2026-11-03 18:00:44] 127.0.0.1:49912-[fixture] USER 'fixture' logged in.
+[I 2026-11-03 18:00:44] 127.0.0.1:49912-[fixture] CWD /private/var/folders/sn/_l3lknnd5wv4ckd0q288ts_w0000gn/T/tc-pane-integration-z41qo3en/remote 250
+[I 2026-11-03 18:00:44] 127.0.0.1:49912-[fixture] RETR /private/var/folders/sn/_l3lknnd5wv4ckd0q288ts_w0000gn/T/tc-pane-integration-z41qo3en/remote/remote.txt completed=1 bytes=12 seconds=0.0
+[I 2026-11-03 18:00:44] 127.0.0.1:49912-[fixture] FTP session closed (disconnect).
+[I 2026-11-03 18:00:44] 127.0.0.1:49917-[] FTP session opened (connect)
+[I 2026-11-03 18:00:44] 127.0.0.1:49917-[fixture] USER 'fixture' logged in.
+[I 2026-11-03 18:00:44] 127.0.0.1:49917-[fixture] CWD /private/var/folders/sn/_l3lknnd5wv4ckd0q288ts_w0000gn/T/tc-pane-integration-z41qo3en/remote 250
+[I 2026-11-03 18:00:44] 127.0.0.1:49917-[fixture] FTP session closed (disconnect).
+[I 2026-11-03 18:00:44] 127.0.0.1:49920-[] FTP session opened (connect)
+[I 2026-11-03 18:00:44] 127.0.0.1:49920-[fixture] USER 'fixture' logged in.
+[I 2026-11-03 18:00:44] 127.0.0.1:49920-[fixture] CWD /private/var/folders/sn/_l3lknnd5wv4ckd0q288ts_w0000gn/T/tc-pane-integration-z41qo3en/remote 250
+[I 2026-11-03 18:00:44] 127.0.0.1:49920-[fixture] FTP session closed (disconnect).
+[I 2026-11-03 18:00:44] 127.0.0.1:49923-[] FTP session opened (connect)
+[I 2026-11-03 18:00:44] 127.0.0.1:49923-[fixture] USER 'fixture' logged in.
+[I 2026-11-03 18:00:44] 127.0.0.1:49923-[fixture] CWD /private/var/folders/sn/_l3lknnd5wv4ckd0q288ts_w0000gn/T/tc-pane-integration-z41qo3en/remote 250
+[I 2026-11-03 18:00:44] 127.0.0.1:49923-[fixture] STOR /private/var/folders/sn/_l3lknnd5wv4ckd0q288ts_w0000gn/T/tc-pane-integration-z41qo3en/remote/local.txt completed=1 bytes=11 seconds=0.0
+[I 2026-11-03 18:00:44] 127.0.0.1:49923-[fixture] FTP session closed (disconnect).
+[I 2026-11-03 18:00:44] 127.0.0.1:49926-[] FTP session opened (connect)
+[I 2026-11-03 18:00:44] 127.0.0.1:49926-[fixture] USER 'fixture' logged in.
+[I 2026-11-03 18:00:44] 127.0.0.1:49926-[fixture] CWD /private/var/folders/sn/_l3lknnd5wv4ckd0q288ts_w0000gn/T/tc-pane-integration-z41qo3en/remote 250
+[I 2026-11-03 18:00:44] 127.0.0.1:49926-[fixture] FTP session closed (disconnect).
+[I 2026-11-03 18:00:44] 127.0.0.1:49929-[] FTP session opened (connect)
+[I 2026-11-03 18:00:44] 127.0.0.1:49929-[fixture] USER 'fixture' logged in.
+[I 2026-11-03 18:00:44] 127.0.0.1:49929-[fixture] CWD /private/var/folders/sn/_l3lknnd5wv4ckd0q288ts_w0000gn/T/tc-pane-integration-z41qo3en/remote 250
+[I 2026-11-03 18:00:44] 127.0.0.1:49929-[fixture] CWD /private/var/folders/sn/_l3lknnd5wv4ckd0q288ts_w0000gn/T/tc-pane-integration-z41qo3en/remote/sub 250
+[I 2026-11-03 18:00:44] 127.0.0.1:49929-[fixture] FTP session closed (disconnect).
+[I 2026-11-03 18:00:44] 127.0.0.1:49932-[] FTP session opened (connect)
+[I 2026-11-03 18:00:44] 127.0.0.1:49932-[fixture] USER 'fixture' logged in.
+[I 2026-11-03 18:00:44] 127.0.0.1:49932-[fixture] CWD /private/var/folders/sn/_l3lknnd5wv4ckd0q288ts_w0000gn/T/tc-pane-integration-z41qo3en/remote 250
+[I 2026-11-03 18:00:44] 127.0.0.1:49932-[fixture] FTP session closed (disconnect).
+[I 2026-11-03 18:00:45] 127.0.0.1:49938-[] FTP session opened (connect)
+[I 2026-11-03 18:00:45] 127.0.0.1:49938-[fixture] USER 'fixture' logged in.
+[I 2026-11-03 18:00:45] 127.0.0.1:49938-[fixture] CWD /private/var/folders/sn/_l3lknnd5wv4ckd0q288ts_w0000gn/T/tc-pane-integration-z41qo3en/remote 250
+[I 2026-11-03 18:00:45] 127.0.0.1:49938-[fixture] CWD /private/var/folders/sn/_l3lknnd5wv4ckd0q288ts_w0000gn/T/tc-pane-integration-z41qo3en/remote/missing 550 'No such file or directory.'
+[I 2026-11-03 18:00:45] 127.0.0.1:49938-[fixture] FTP session closed (disconnect).
+[I 2026-11-03 18:00:45] 127.0.0.1:49940-[] FTP session opened (connect)
+[I 2026-11-03 18:00:45] 127.0.0.1:49940-[fixture] USER 'fixture' logged in.
+[I 2026-11-03 18:00:45] 127.0.0.1:49940-[fixture] CWD /private/var/folders/sn/_l3lknnd5wv4ckd0q288ts_w0000gn/T/tc-pane-integration-z41qo3en/remote 250
+[I 2026-11-03 18:00:45] 127.0.0.1:49940-[fixture] CWD /private/var/folders/sn/_l3lknnd5wv4ckd0q288ts_w0000gn/T/tc-pane-integration-z41qo3en/remote/missing 550 'No such file or directory.'
+[I 2026-11-03 18:00:45] 127.0.0.1:49940-[fixture] FTP session closed (disconnect).
+Provider UI integration passed: ZIP/FTP main panes, tabs/history, materialization, transfers, parent navigation, stale completion
+All native backend and provider integration suites passed.

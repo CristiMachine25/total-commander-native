@@ -1,0 +1,12 @@
+{
+  "target_sha256": "570f455917d991d32329005e259653fb4817716f137297ed82389ec920352f99",
+  "provider_inventory_entries": 24601,
+  "written": 5565,
+  "failed": 2,
+  "unsettled": 19034,
+  "inferred_skipped_candidate": "0x5546b0",
+  "continuation_start": "0x55a520",
+  "continuation_written": 128,
+  "hash_mismatches": [],
+  "full_decompilation": false
+}

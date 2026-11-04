@@ -1,0 +1,12 @@
+{
+  "version": "0.4.0",
+  "date": "2026-11-04",
+  "sha256": "69af1bce1c714ac10f28791aa84e99e1e842adcdf517dc2d5b3579f1958df607",
+  "size_bytes": 2816844,
+  "optimized_bundle_smoke": "passed including preference preservation",
+  "dmg_integrity": "hdiutil verify passed",
+  "mounted_signature": "codesign --verify --deep --strict passed",
+  "mounted_launch": "visible home folders; automatic size units preserved",
+  "full_parity": false,
+  "signing": "ad-hoc; not notarized"
+}

@@ -1,0 +1,28 @@
+# Native implementation coverage — 0.4.0
+
+This is a partial native reconstruction of Total Commander 11.58.1, not an exact replica or recovered original project. It uses real macOS paths without Wine. Original resources establish documented intent, not runtime equivalence.
+
+The evidence matrix retains 621 command declarations, 100 menu declarations and 136 keyboard records: **68 command, 40 menu and 62 shortcut records are marked partial (170 of 857); 687 remain unassessed.** These overlap and are not independent features. Unassessed does not prove absent. Numeric command routes and every original parameter are not implied by similar functionality. Original evidence columns and ordering are unchanged.
+
+| Scope | Native implementation and fixture evidence | Remaining boundary |
+|---|---|---|
+| Local filesystem and transfers | FileService.swift and TransferQueue.swift: 34 filesystem and 35 queue assertions; collision choices, cancellation, recursive merge, symlink handling and destination FD checks | Full metadata, persistent queue, retry/resume, all original dialogs and filesystem semantics |
+| Provider panes and transfers | PaneLocations.swift, PaneIntegration.swift, ProviderTransfers.swift: local/archive/FTP tabs, history, navigation, materialization and recursive transfer APIs | No provider-wide advanced search/synchronization; every combination and race is not transactional |
+| Viewer and editor | Lister.swift: 25 assertions for bounded text/image and paged hex; Editor, RemoteEditing and ArchiveEditing provide explicit save/writeback | Full encodings, multimedia, plugins and all original view/editor policies |
+| Search and rename | Operations/AdvancedUI; RenameMasks.swift has 66 fixture checks; preview/validation and rollback-capable rename execution | All search criteria, every mask/plugin/preset and original undo behavior |
+| Synchronization and comparison | Synchronization.swift: 33 assertions; FileListComparison: 8; bounded read-only text comparison | Local copy-only synchronization; no deletion mirroring or full binary diff/edit/merge |
+| Archive reading | ArchiveBrowser.swift/Operations.swift: ArchiveFormatsTests has 44 passing assertions covering ZIP, full ZIP64 records, supported password ZIP (missing/wrong/correct password), 7z, TAR, TGZ, GZIP, BZIP2, XZ and actual RAR fixtures | Bounded reads and tested variants only; non-ZIP/password sessions read-only; not all encryption or split archives |
+| ZIP mutation/writeback | ArchiveMutations: 35 assertions; ArchiveEditing: 18; ArchiveWriteback: 26; local/nested/FTP-origin add/delete/rename/edit/repack with stale checks and recovery | Supported ordinary ZIP only; full recompression, limited metadata preservation. FTP preflight + RNTO is not atomic no-clobber; remote backups retained |
+| FTP | FTP.swift: 44 localhost checks plus provider/editing suites; MLSD, recursive binary transfers, rename/delete and writeback | No resume/SFTP/all connection policies; successful trusted production FTPS not established |
+| Checksums and split/combine | Checksums known vectors/manifests/mismatch checks; FilePartsTests has 36 passing assertions for splitting, combining, sequence/size/CRC validation and failure protection | Split-file support does not imply split archives; all original encoding/ancillary utilities remain incomplete |
+| Full/Brief/Tree/Thumbnails | Main.swift, BriefView.swift, DirectoryTreeView.swift, ThumbnailView.swift and SeparateTrees.swift implement actual views and one/two local separate trees | No branch/custom columns/comments mode, full original thumbnail providers/cache or exact native control behavior |
+| Quick View | Opposite pane follows selection with bounded provider materialization, text/hex/image display | No multimedia/plugins, recursive directory totals or separate-following viewer |
+| Configuration | ConfigurationModel.swift/Preferences.swift: 52 typed persisted settings; 46 model and 29 real AppKit dialog assertions passed independently; 24 category labels with 13 functional categories | All original settings remain incomplete; native JSON-backed preferences, not wincmd.ini compatibility. See configuration-coverage.md |
+| Size formatting and filters | Ten original size styles plus labeled native fixed MB/GB, binary/decimal bases, independent footer format; Quick Search modifier/beginning/ending settings; Ignore List in listings/tree children | Ignore rules are display-only, not recursive operation exclusion; complete original search dialog/options absent |
+| Menus, shortcuts and session | Original 100-item MNU hierarchy and INC mappings; supported actions routed, unsupported items disabled; keyboard/tab/history/hotlist implementations | Original menu presence does not certify its actions. All shortcut contexts, locked tabs and full command-language parity remain incomplete |
+
+## Validation boundary
+
+Counts above describe independently passing fixture suites, not a claim that every latest change passed final packaging. Earlier integrated snapshots and visible workflows verified copy, rename, search, synchronization, ZIP/FTP panes and editing, Brief and selection-following Quick View. Those earlier runs do not certify all 0.4.0 settings, tree/thumbnail, archive-format and split/combine changes.
+
+The final expanded integrated snapshot and mounted 0.4.0 artifact verification were pending when this document was synchronized. [TEST-RESULTS.md](../TEST-RESULTS.md) is the authoritative release ledger for subsequent results. No exact-parity row is claimed. [Current interface audit](current-parity.md), [settings coverage](configuration-coverage.md) and [remaining requirements](remaining-parity-gaps.md) describe the current boundaries.

@@ -1,0 +1,3 @@
+69af1bce1c714ac10f28791aa84e99e1e842adcdf517dc2d5b3579f1958df607  Total-Commander-Native-development.dmg
+161d1373d55f11d3fdd8d706d1520cf922d7dc00889ea94b67b3b2565ee811b5  Total-Commander-Native-source.zip
+1805c01a8547c9287b28bacc21055312cba2bd0d9dd0bb3e2d4906732e0054e8  Total-Commander-partial-pseudocode.zip
