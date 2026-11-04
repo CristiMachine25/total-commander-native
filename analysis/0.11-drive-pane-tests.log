@@ -1,0 +1,23 @@
+Focused final-source DrivePane test evidence
+Recorded from completed tool execution; this file is a saved record, not live stdout redirection.
+
+Repository: /Users/cristi/Documents/Codex/2026-10-30/using/outputs/TotalCommanderNative
+Test commit: f9a2f64
+Test source: Tests/DrivePaneTests.swift
+Production source changes during test: none
+
+Compilation:
+xcrun swiftc -whole-module-optimization -swift-version 5 -framework AppKit -framework ImageIO [all Sources/*.swift except Sources/Main.swift] [temporary Main.swift copy] Tests/DrivePaneTests.swift -o [temporary test executable]
+Temporary Main copy removes @main and changes only private func refreshDrives( to func refreshDrives( for inventory injection.
+The Python runner used subprocess.run(..., check=True) for compilation and execution, then cleaned its TemporaryDirectory.
+
+Execution output (verbatim):
+Drive pane integration: 15 checks passed
+
+Tool execution evidence:
+exec session: 22307
+final write_stdin result chunk_id: 9d4a59
+exit_code: 0
+
+Coverage: actual bar layout/width, independent visibility settings, local/FTP/tree drive selection, updateHeader=false, failed popup navigation restoration, duplicate Backup/Home popup labels, matching target URLs, and horizontal overflow with 20 drives.
+No USB hardware insertion was performed by this suite.

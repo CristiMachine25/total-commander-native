@@ -1,5 +1,15 @@
 # Native validation ledger
 
+## 0.11.0 mounted drive bars — 4 November 2026
+
+- Added an independent bar above each pane, volume names/icons, selected-volume indication and mount/unmount/rename refresh. Config v6 adds a default-on visibility setting while preserving v1–v5 migration.
+- 12 drive inventory/selection/observer checks passed. Focused configuration suites passed 46 model assertions and 69 file/migration assertions.
+- 15 final-source actual-pane checks passed: bar placement/width, horizontal overflow, independent visibility, local/FTP/tree selection, rejected popup navigation, duplicate volume names including Home, and correct button-to-URL routing.
+- All pre-existing backend/provider suites reached their passing assertions through History in the [regression log](analysis/0.11-full-tests.log). The runner then exited 1 because the drive-pane test was appended while it was running, after its immutable Tests snapshot was taken. This is a test-harness snapshot error, not a passing full-run exit. The appended final-source suite was compiled/run separately and passed; see the [focused log](analysis/0.11-drive-pane-tests.log).
+- Visible optimized mounted-DMG testing: a disposable HFS+ image appeared in both bars without restart; each button navigated only its own pane; eject removed both buttons and cleared stale selection. Both panes were restored. Final rebuilt source repeated mount/navigation/unmount and passed [UI smoke](analysis/0.11-optimized-smoke.log).
+- Independent preference comparison after quit found every pre-existing preference semantically unchanged (including pane paths and decoded tab-view JSON). No personal files were modified; screenshot uses only generated demo files.
+- Physical USB hardware and network-volume behavior were not exercised; the test used real macOS disk-image mount/unmount notifications. Original single-bar layout, custom drive spacing and DriveBar1/DriveBar2 INI semantics remain gaps.
+
 ## 0.10.0 simplified shortcuts and settings audit — 4 November 2026
 
 - Original settings audit: 601 option/behavior rows across 32 help pages, plus 847 INI declaration occurrences marked unverified. These counts are not independent feature totals or a parity percentage. See [scope and evidence](analysis/settings-audit.md).

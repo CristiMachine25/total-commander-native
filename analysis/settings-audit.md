@@ -1,4 +1,4 @@
-# Original settings audit — 0.10.0
+# Original settings audit — 0.11.0
 
 The original target is Total Commander 11.58.1, TOTALCMD64.EXE SHA-256 `570f455917d991d32329005e259653fb4817716f137297ed82389ec920352f99`.
 
@@ -22,3 +22,7 @@ Earlier Hopper/REA recovery emitted 5,565 pseudocode files from 24,601 provider 
 Simplified action-first Keybindings with readable defaults, recording, explicit conflict replacement and collapsed Advanced controls. Nine new typed settings cover directory brackets/trailing separator, directory counts, grouped-directory name order, four-way filename sorting, Brief width cap, history saving, displayed history limit and icons. History Save/Delete now act on saved local history independently of current navigation. Version 5 native configuration imports older versions; documented supported INI mappings are explicit, with slash adaptation reported.
 
 Remaining gaps are substantial: see the CSVs and [remaining requirements](remaining-parity-gaps.md). No finished exact Total Commander parity claim is made.
+
+## 0.11.0 drive-bar follow-up
+
+Per-pane native volume bars now update on workspace mount/unmount/rename notifications. A default-on Layout toggle persists in configuration v6, with migrations from v1–v5. Original single-bar layout, configurable drive spacing and DriveBar1/DriveBar2 INI semantics remain differences. Notification API: [Apple NSWorkspace documentation](https://developer.apple.com/documentation/appkit/nsworkspace/didmountnotification).

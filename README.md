@@ -1,3 +1,9 @@
+## New in 0.11.0
+
+Each pane now has its own drive-button bar with macOS volume names and icons. Mounted USB, external and network volumes update automatically when macOS mounts, unmounts or renames them. Toggle **Configuration → Layout → Show drive buttons** independently of the drive combobox.
+
+![Drive bars with disposable demo volume](docs/screenshots/drive-bars.png)
+
 ## New in 0.10.0
 
 Keybindings now uses a searchable **Action / Shortcut** list with **Record shortcut**, **Restore default**, and a collapsed **Advanced** section. New Display, Tabstops and History controls add directory decorations/counts, sorting policies, Brief width limits and saved local directory history.
@@ -10,7 +16,7 @@ The [original settings audit](analysis/settings-audit.md) identifies implemented
 
 A native, keyboard-driven dual-pane file manager for **Apple Silicon · macOS 13+**. Browse your Mac folders and mounted volumes directly, with a classic Total Commander-style interface—no Wine or Windows runtime.
 
-**0.10.0 development build.** This is an independent reconstruction, not an official Ghisler release or a complete port. [Compatibility and remaining work →](analysis/remaining-parity-gaps.md)
+**0.11.0 development build.** This is an independent reconstruction, not an official Ghisler release or a complete port. [Compatibility and remaining work →](analysis/remaining-parity-gaps.md)
 
 [Download a build](https://github.com/CristiMachine25/total-commander-native/releases) · [Test results](TEST-RESULTS.md) · [Feature coverage](analysis/native-coverage.md)
 

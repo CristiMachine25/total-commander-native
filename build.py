@@ -24,7 +24,7 @@ shutil.copytree(base/'analysis',res/'analysis')
 if (base/'docs').exists():
  shutil.copytree(base/'docs',res/'docs')
  shutil.copytree(base/'docs',stage/'docs')
-info=dict(CFBundleName='Total Commander Native',CFBundleIconFile='TotalCommander',CFBundleDisplayName='Total Commander Native',CFBundleIdentifier='local.totalcommander.native',CFBundleExecutable='NativeCommander',CFBundlePackageType='APPL',CFBundleShortVersionString='0.10.0',CFBundleVersion='11',LSMinimumSystemVersion='13.0',NSHighResolutionCapable=True,NSPrincipalClass='NSApplication')
+info=dict(CFBundleName='Total Commander Native',CFBundleIconFile='TotalCommander',CFBundleDisplayName='Total Commander Native',CFBundleIdentifier='local.totalcommander.native',CFBundleExecutable='NativeCommander',CFBundlePackageType='APPL',CFBundleShortVersionString='0.11.0',CFBundleVersion='12',LSMinimumSystemVersion='13.0',NSHighResolutionCapable=True,NSPrincipalClass='NSApplication')
 (app/'Contents/Info.plist').write_bytes(plistlib.dumps(info))
 run('codesign','--force','--sign','-',res/'7zz')
 run('codesign','--force','--deep','--sign','-',app)

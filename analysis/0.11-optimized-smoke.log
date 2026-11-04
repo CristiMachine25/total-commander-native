@@ -1,0 +1,3 @@
+Button bar UI integration passed: add, edit, reorder, separator, delete, command dispatch, cancel, preference isolation
+Configuration UI integration passed: size cells, columns, row heights, layout, selection, thumbnails, tree, masks
+UI smoke tests passed
