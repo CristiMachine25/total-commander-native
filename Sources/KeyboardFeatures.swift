@@ -178,10 +178,15 @@ extension CommanderController {
     func sortSource(_ key: String) {
         guard let column = activePane.table.tableColumns.first(where: { $0.identifier.rawValue == key }) else { return }
         activePane.tableView(activePane.table, didClick: column)
+        recordManualViewChange(in:activePane)
     }
     @objc func briefView() { setBrief(true) }
     @objc func fullView() { setBrief(false) }
-    func setBrief(_ value: Bool) { activePane.setBriefMode(value) }
+    func setBrief(_ value: Bool) {
+        guard !busy,!activePane.isLoading else{return}
+        if !value {var config=activePane.configuration;config.activeCustomColumnSetID="";activePane.applyConfiguration(config)}
+        activePane.setBriefMode(value);recordManualViewChange(in:activePane)
+    }
     @objc func quickFilter() {
         prompt(title: "Quick Filter", detail: "Show names containing:", value: activePane.filter, action: "Filter") { [weak self] text in
             self?.activePane.filter = text; self?.refreshSource()
@@ -288,8 +293,9 @@ extension CommanderController {
         menu.popUp(positioning: nil, at: .zero, in: commandField)
     }
     @objc func recallCommand(_ item: NSMenuItem) { commandField.stringValue = item.title; focusCommand() }
-    func saveSession() {
-        guard remember,runtimeConfig.saveOnExit else { return }
+    func saveSession(force:Bool=false) {
+        guard remember,(runtimeConfig.saveOnExit || force) else { return }
+        saveNamedViewChoices()
         for (name,p) in [("left",left),("right",right)] {
             let locals=p.tabs.enumerated().compactMap { index,location -> (Int,String)? in location.localDirectory.map { (index,$0.path) } }
             UserDefaults.standard.set(locals.map{$0.1},forKey:name+"Tabs")

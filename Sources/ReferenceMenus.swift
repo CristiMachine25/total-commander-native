@@ -128,13 +128,13 @@ struct ReferenceMenuCatalog {
 /// original ID has a genuine native route; unknown IDs remain visible but disabled.
 enum ReferenceCommandRouting {
     static let supportedIDs:Set<Int> = [
-        3200,3201,3202,269,301,302,303,304,305,311,312,313,314,321,322,323,324,325,330,493,552,2023,2031,2032,2036,2037,
+        270,333,483,2920,2939,2940,2947,8500,8501,8502,8503,8504,8505,8506,8507,8508,8509,271,272,273,274,275,276,277,278,279,3200,3201,3202,269,301,302,303,304,305,311,312,313,314,321,322,323,324,325,330,493,552,2023,2031,2032,2036,2037,
         498,571,560,561,490,501,503,508,509,510,518,521,522,523,524,525,526,527,529,530,531,532,533,
         540,550,551,553,564,565,570,580,581,620,640,690,2017,2018,2020,2022,2121,2400,3001,24340
     ]
     static let localOnlyIDs:Set<Int> = [560,561,501,503,508,509,510,564,565,2020,2022,2400]
     static let selectedIDs:Set<Int> = [560,561,503,508,509,510,518,527,564,565,2017,2018,2022,2400]
-    static func isSupported(_ id:Int?)->Bool {id.map{supportedIDs.contains($0)} ?? false}
+    static func isSupported(_ id:Int?)->Bool {id.map{supportedIDs.contains($0) || (271...299).contains($0) || (8500...8749).contains($0)} ?? false}
     static func unsupportedReason(_ id:Int?)->String {"Not implemented in the native macOS app" + (id.map{" (original command \($0))."} ?? ".")}
 }
 
@@ -144,7 +144,7 @@ extension CommanderController: NSMenuDelegate {
         for item in menu.items where item.representedObject is String {
             item.isEnabled = referenceCommandEnabled(item.tag)
             if item.tag == 301 {item.state = activePane.brief ? .on : .off}
-            if item.tag == 302 {item.state = activePane.viewMode == .full ? .on : .off}
+            if item.tag == 302 {item.state = activePane.viewMode == .full && activePane.currentCustomColumnSet == nil ? .on : .off}
             if item.tag == 303 {item.state = activePane.isTreeMode ? .on : .off}
             if item.tag == 269 {item.state = activePane.viewMode == .thumbnails ? .on : .off}
             if item.tag == 305 {item.state = runtimeConfig.verticalArrangement ? .on : .off}
@@ -171,7 +171,7 @@ extension CommanderController: NSMenuDelegate {
                     item.toolTip=supported ? "Original command: \(token) (\(id!))" : ReferenceCommandRouting.unsupportedReason(id)
                     if let id {
                         if id==301{item.state=activePane.brief ? .on : .off}
-                        if id==302{item.state=activePane.viewMode == .full ? .on : .off}
+                        if id==302{item.state=activePane.viewMode == .full && activePane.currentCustomColumnSet == nil ? .on : .off}
                         if id==303{item.state=activePane.isTreeMode ? .on : .off}
                         if id==269{item.state=activePane.viewMode == .thumbnails ? .on : .off}
                         if id==305{item.state=runtimeConfig.verticalArrangement ? .on : .off}
@@ -187,8 +187,11 @@ extension CommanderController: NSMenuDelegate {
         return build(nodes,title:title)
     }
     func referenceCommandEnabled(_ id:Int)->Bool {
-        guard ReferenceCommandRouting.supportedIDs.contains(id),!busy,!activePane.isLoading else{return false}
-        if (activePane.isTreeMode || separateTrees.hasFocus) && ![3200,3201,3202,269,301,302,303,305,490,493,498,540,580,581,620,640,690,24340].contains(id){return false}
+        guard ReferenceCommandRouting.isSupported(id),!busy,!activePane.isLoading else{return false}
+        if (271...299).contains(id),!runtimeConfig.customColumnSets.indices.contains(id-271) {return false}
+        if (8501...8749).contains(id),!runtimeConfig.viewModes.filter({$0.id != "default"}).indices.contains(id-8501) {return false}
+        let displayModeCommand=(271...299).contains(id) || (8500...8749).contains(id)
+        if (activePane.isTreeMode || separateTrees.hasFocus) && !displayModeCommand && ![270,333,483,2920,2939,2940,2947,8500,3200,3201,3202,269,301,302,303,305,490,493,498,540,580,581,620,640,690,24340].contains(id){return false}
         if ReferenceCommandRouting.localOnlyIDs.contains(id),activePane.location.localDirectory==nil{return false}
         if id==2020,otherPane.location.localDirectory==nil{return false}
         if ReferenceCommandRouting.selectedIDs.contains(id),activePane.selectedEntries.isEmpty{return false}
@@ -199,6 +202,7 @@ extension CommanderController: NSMenuDelegate {
     @objc func referenceCommand(_ sender:NSMenuItem) {_ = routeReferenceCommand(sender.tag)}
     @discardableResult func routeReferenceCommand(_ id:Int)->Bool {
         guard referenceCommandEnabled(id) else{return false}
+        if routeDisplaySettingsCommand(id) {return true}
         switch id {
         case 301:briefView()
         case 302:fullView()

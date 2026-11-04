@@ -38,6 +38,7 @@ struct ShortcutSettings {
     // Explicit dispatch-capability snapshot. Unknown original commands are rejected,
     // not accepted as placeholders or treated as shell commands.
     static let supportedCommands:Set<String>=Set("""
+cm_srccustomviewmenu cm_srcviewmodelist cm_customcolumnconfig cm_customcolumndlg cm_configviewmodes cm_configviewmodeswitch cm_toggleautoviewmodeswitch
 cm_about cm_buttonconfig cm_clearall cm_closealltabs cm_closecurrenttab
 cm_combine cm_comparedirs cm_comparefilesbycontent cm_config cm_configchangeinifiles
 cm_configsavepos cm_configsavesettings cm_copy cm_copyfiledetailstoclip cm_copyfpfiledetailstoclip
@@ -56,7 +57,7 @@ cm_srcbyname cm_srcbysize cm_srcexecs cm_srclong cm_srcnegorder
 cm_srcquickview cm_srcshort cm_srcthumbs cm_srctree cm_srcunsorted
 cm_srcuserdef cm_srcuserspec cm_testarchive cm_unpackfiles cm_versioninfo
 cm_verticalpanels cm_visithomepage
-""".split(whereSeparator:{$0.isWhitespace}).map(String.init))
+""".split(whereSeparator:{$0.isWhitespace}).map(String.init)).union((1...29).map{"cm_srccustomview"+String($0)}).union((0...249).map{"cm_srcviewmode"+String($0)})
     static func failure(_ text:String)->NSError{NSError(domain:"ShortcutSettings",code:1,userInfo:[NSLocalizedDescriptionKey:text])}
     static func validate(shortcuts:String,aliases:String)throws{_=try parse(shortcuts:shortcuts,aliases:aliases)}
     static func parse(shortcuts:String,aliases:String)throws->ShortcutSettings {

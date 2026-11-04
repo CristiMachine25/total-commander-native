@@ -23,6 +23,7 @@ extension CommanderController {
         reconfigureQuickView();separateTrees.refreshRoots()
         if oldHidden != showHidden {refresh()}
         refreshController.configure()
+        reconfigureNamedViewModes()
     }
     func configuredExternalApplication(editable:Bool)->URL? {
         let enabled=editable ? runtimeConfig.externalEditorEnabled : runtimeConfig.externalViewerEnabled
@@ -47,6 +48,6 @@ extension CommanderController {
     }
     @objc func saveConfiguration() {
         guard remember else {return}
-        do {try runtimeConfig.save();saveSession();status.stringValue="Settings saved"}catch{showError(error)}
+        do {try runtimeConfig.save();saveSession(force:true);status.stringValue="Settings saved"}catch{showError(error)}
     }
 }

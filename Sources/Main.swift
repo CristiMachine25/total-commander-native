@@ -244,7 +244,7 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
         guard !configurationApplied || next != previous else{return}
         let firstApply = !configurationApplied
         let refilter=firstApply || next.ignoreListEnabled != previous.ignoreListEnabled || next.ignorePatterns != previous.ignorePatterns
-        let resort=refilter || next.directoriesFirst != previous.directoriesFirst || next.caseSensitiveSort != previous.caseSensitiveSort
+        let resort=refilter || next.directoriesFirst != previous.directoriesFirst || next.caseSensitiveSort != previous.caseSensitiveSort || next.customColumnSets != previous.customColumnSets || next.activeCustomColumnSetID != previous.activeCustomColumnSetID
         configuration=next;configurationApplied=true
         let base=NSFont(name:configuration.fileFontName,size:configuration.fileFontSize) ?? NSFont.systemFont(ofSize:configuration.fileFontSize)
         cachedFont=configuration.fileFontBold ? NSFontManager.shared.convert(base,toHaveTrait:.boldFontMask):base
@@ -257,6 +257,7 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
             let key=column.identifier.rawValue;column.isHidden = !configuration.visibleColumns.contains(key) || (key == "ext" && configuration.extensionStyle == .afterName)
             column.width=configuration.columnWidths[key] ?? column.width
         }
+        applyCustomColumnLayout()
         if firstApply || configuration.thumbnailSize != previous.thumbnailSize {
             thumbnailGrid.pixels=configuration.thumbnailSize;thumbnailGrid.invalidateListing()
         }
@@ -302,6 +303,7 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
             tabControl.setWidth(max(40,(label as NSString).size(withAttributes:[.font:tabControl.font ?? NSFont.systemFont(ofSize:12)]).width+24),forSegment:i)
         }
         tabControl.selectedSegment = selectedTab
+        decorateNamedViewTab()
     }
     func storeTab() { tabs[selectedTab] = location; updateTabs() }
     @objc private func pathEntered() { onActivate?(); onPath?(path.stringValue) }
@@ -321,6 +323,7 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
             text = key == "name" ? "[..]" : (key == "size" ? "<UP>" : "")
         } else {
             let e = entries[row - 1]
+            if let custom=customColumnText(key,entry:e) {text=custom} else {
             switch key {
             case "ext": text = e.isDirectory ? "" : e.url.pathExtension
             case "attr": text = e.isSymbolicLink ? "link" : (e.isDirectory ? "d---" : "-a--")
@@ -328,8 +331,9 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
             case "date": text = e.modified.map { configuration.dateString($0) } ?? "—"
             default:
                 let prefix = marked.contains(e.url) ? "✓ " : ""
-                text = prefix + (e.isDirectory ? "[" + e.name + "]" : (configuration.extensionStyle == .afterName || (e.name as NSString).pathExtension.isEmpty ? e.name : (e.name as NSString).deletingPathExtension))
+                text = prefix + (e.isDirectory ? "[" + e.name + "]" : ((configuration.extensionStyle == .afterName && currentCustomColumnSet == nil) || (e.name as NSString).pathExtension.isEmpty ? e.name : (e.name as NSString).deletingPathExtension))
             }
+        }
         }
         let hasIcon=key == "name" && configuration.iconMode != .none
         let identifier=NSUserInterfaceItemIdentifier("pane.cell.\(key).\(hasIcon ? configuration.iconSize:0)")
@@ -338,7 +342,7 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
         let cell=container?.textField ?? (reused as? NSTextField) ?? label("")
         cell.stringValue=text;cell.font=configuredFont
         cell.textColor=itemColor(marked:row>0 && marked.contains(entries[row-1].url),selected:table.selectedRowIndexes.contains(row))
-        cell.alignment=key == "size" ? .right:.left
+        cell.alignment=(key == "size" || customColumnDefinition(key)?.alignment == .right) ? .right:.left
         cell.toolTip=row == 0 ? "Parent folder":entries[row-1].url.path
         guard let container else {cell.identifier=identifier;return cell}
         container.identifier=identifier
@@ -372,15 +376,18 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
     }
     func sortEntries() {
         guard sortColumn != "unsorted" else{return}
+        if sortNamedViewEntriesIfNeeded() {return}
         func compareName(_ a:String,_ b:String)->ComparisonResult {configuration.caseSensitiveSort ? a.compare(b):a.localizedStandardCompare(b)}
         entries.sort { a,b in
             if configuration.directoriesFirst,a.isDirectory != b.isDirectory { return a.isDirectory }
             let comparison: ComparisonResult
+            if let custom=compareCustomColumn(sortColumn,a,b) {comparison=custom == .orderedSame ? compareName(a.name,b.name):custom} else {
             switch sortColumn {
             case "ext": comparison = compareName((a.name as NSString).pathExtension,(b.name as NSString).pathExtension)
             case "size": comparison = a.size == b.size ? compareName(a.name,b.name) : (a.size < b.size ? .orderedAscending : .orderedDescending)
             case "date": comparison = (a.modified ?? .distantPast).compare(b.modified ?? .distantPast)
             default: comparison = configuration.caseSensitiveSort ? a.name.compare(b.name):compareName(a.name,b.name)
+            }
             }
             return ascending ? comparison == .orderedAscending : comparison == .orderedDescending
         }
@@ -589,6 +596,7 @@ class CommanderController: NSObject, NSWindowDelegate, NSUserInterfaceValidation
             pane.onTreeOpen={ [weak self,weak opposite] location in guard let self,let opposite else{return};self.navigate(location,pane:opposite,focus:false)}
             pane.restoreViewMode()
         }
+        finishRestoringNamedViewModes()
         installFileContextMenus()
         activate(0)
         separateTrees.restore()
@@ -655,6 +663,7 @@ class CommanderController: NSObject, NSWindowDelegate, NSUserInterfaceValidation
             default: break
             }
         }
+        if mods == [.shift], event.keyCode == 122 {showCustomColumnMenu();return true}
         if mods == [.shift], event.keyCode == 97 { renameCurrent(); return true }
         if mods.isEmpty,event.keyCode==53,!quickSearchText.isEmpty {quickSearchText="";status.stringValue=activePane.location.displayPath;return true}
         if handleQuickSearch(event) {return true}

@@ -4,6 +4,7 @@ extension CommanderController {
     /// Original command spellings supported by the native dispatcher.
     /// Unknown names remain errors, never silently launch a shell command.
     func dispatchInternalCommand(_ raw: String) -> Bool {
+        if let id=displaySettingsCommandID(raw) {return routeReferenceCommand(id)}
         switch raw.lowercased() {
         case "cm_srcshort": briefView()
         case "cm_srclong": fullView()

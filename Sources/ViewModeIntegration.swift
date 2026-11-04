@@ -3,7 +3,7 @@ extension CommanderController {
     @objc func thumbnailView() {
         guard !busy else{return}
         if !activePane.setThumbnailMode() {showMessage("Thumbnail view","Thumbnails are available in local folders.")}
-        else {window.makeFirstResponder(activePane.fileResponder)}
+        else {recordManualViewChange(in:activePane);window.makeFirstResponder(activePane.fileResponder)}
     }
     @objc func treeView() {
         guard !busy else{return}

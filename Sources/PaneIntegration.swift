@@ -30,7 +30,7 @@ extension PaneLocation {
 }
 
 extension CommanderController {
-    @discardableResult func navigate(_ next:PaneLocation,pane:Pane?=nil,recordHistory:Bool=true,focus:Bool=true,storeTab:Bool=true,completion:((Bool)->Void)?=nil)->Bool {
+    @discardableResult func navigate(_ next:PaneLocation,pane:Pane?=nil,recordHistory:Bool=true,focus:Bool=true,storeTab:Bool=true,viewModeTabSwitch:Bool=false,completion:((Bool)->Void)?=nil)->Bool {
         guard !busy else {completion?(false);return false}
         let target=pane ?? activePane
         if storeTab,target.lockedTabRoots[target.selectedTab] != nil,next != target.location {
@@ -41,6 +41,7 @@ extension CommanderController {
         func commit(_ rows:[FileEntry]) {
             if recordHistory && previous != next {target.backHistory.append(previous);target.backHistory=Array(target.backHistory.suffix(runtimeConfig.historyLimit));target.forwardHistory.removeAll()}
             target.applyListing(rows,location:next);if storeTab {target.storeTab()}
+            applyAutomaticViewMode(to:target,directoryChanged:previous != next,tabSwitch:viewModeTabSwitch)
             if remember,runtimeConfig.saveOnExit,let local=next.localDirectory {UserDefaults.standard.set(local.path,forKey:target === left ? "leftPath" : "rightPath")}
             if target === activePane {quickSearchText=""}
             status.stringValue=next.displayPath
@@ -71,7 +72,7 @@ extension CommanderController {
         let p=pane ?? activePane
         guard !busy,p.tabs.indices.contains(index) else {return}
         let next=p.tabs[index]
-        navigate(next,pane:p,recordHistory:false,storeTab:false) { success in
+        navigate(next,pane:p,recordHistory:false,storeTab:false,viewModeTabSwitch:true) { success in
             if success,p.tabs.indices.contains(index) {p.selectedTab=index;p.tabs[index]=p.location}
             p.updateTabs()
         }
@@ -99,7 +100,7 @@ extension CommanderController {
                     self.left.lockedTabRoots=self.right.lockedTabRoots;self.right.lockedTabRoots=locks
                     self.left.tabs=self.right.tabs;self.left.selectedTab=self.right.selectedTab;self.left.backHistory=self.right.backHistory;self.left.forwardHistory=self.right.forwardHistory
                     self.right.tabs=tabs;self.right.selectedTab=index;self.right.backHistory=back;self.right.forwardHistory=forward
-                    self.left.applyListing(rows.1,location:rightLocation);self.right.applyListing(rows.0,location:leftLocation);self.left.updateTabs();self.right.updateTabs();self.updateQuickView()
+                    self.left.applyListing(rows.1,location:rightLocation);self.right.applyListing(rows.0,location:leftLocation);self.left.updateTabs();self.right.updateTabs();self.applyAutomaticViewMode(to:self.left);self.applyAutomaticViewMode(to:self.right);self.updateQuickView()
                 case .failure(let error):self.showError(error)
                 }
                 self.drainArchiveUpdates()
