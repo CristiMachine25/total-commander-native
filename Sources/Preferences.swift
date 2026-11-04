@@ -12,9 +12,9 @@ private struct ConfigurationPage {
         .init(title:"Font",missing:"Per-resolution font profiles, dialog DPI scaling and separate main-window/dialog fonts."),
         .init(title:"Color",missing:"File-type color rules and separate dark-mode palettes."),
         .init(title:"Tabstops",missing:"Independent progress-dialog units."),
-        .init(title:"Custom Columns",missing:"Content-plugin fields and saved custom-column sets."),
-        .init(title:"View Modes",missing:"Saved named view modes and automatic switching rules."),
-        .init(title:"Auto Switch Mode",missing:"Automatic directory/file-type rules selecting a saved view mode."),
+        .init(title:"Custom Columns",missing:"Windows content-plugin fields, per-filesystem-plugin column sets, and original dialog-unit sizing."),
+        .init(title:"View Modes",missing:"Windows tab-icon files and plugin-dependent commands."),
+        .init(title:"Auto Switch Mode",missing:"Windows drive-type detection and filesystem-plugin conditions."),
         .init(title:"Folder Tabs",missing:"Locked tabs allowing directory changes, remote tab locks, multiline tabs and per-tab display filters."),
         .init(title:"Thumbnails",missing:"Windows OLE/Lister-plugin providers, EXIF custom fields and a persistent thumbnail database."),
         .init(title:"Operation",missing:"Tray behavior, mouse-selection compatibility modes and file-comment formats."),
@@ -119,7 +119,7 @@ final class PreferencesController:NSWindowController,NSWindowDelegate,NSTableVie
         objc_setAssociatedObject(button,&configurationBrowseKey,target,.OBJC_ASSOCIATION_RETAIN_NONATOMIC);page.addArrangedSubview(button)
     }
     private func showPage(_ index:Int){
-        if !page.arrangedSubviews.isEmpty {cachedPages[currentPage]=CachedPage(views:page.arrangedSubviews,readers:readers)}
+        if !page.arrangedSubviews.isEmpty && !(6...8).contains(currentPage) {cachedPages[currentPage]=CachedPage(views:page.arrangedSubviews,readers:readers)}
         currentPage=index;readers.removeAll();for view in page.arrangedSubviews{page.removeArrangedSubview(view);view.removeFromSuperview()}
         let descriptor=ConfigurationPage.all[index];heading.stringValue=descriptor.title
         note.stringValue="Not yet implemented on this page: "+descriptor.missing
@@ -148,6 +148,33 @@ final class PreferencesController:NSWindowController,NSWindowDelegate,NSTableVie
             choice("Date format",\.dateOrder,[("System locale",.system),("Day first",.dayFirst),("Month first",.monthFirst),("Year first (ISO)",.yearFirst)])
             checkbox("Show century in date",\.showCentury);checkbox("Show seconds",\.showSeconds)
             text("Date separator (blank = default)",\.dateSeparator);text("Time separator (blank = default)",\.timeSeparator);checkbox("Use 12-hour time",\.use12HourTime)
+        case "Custom Columns":
+            let editor=DisplaySettingsEditors.columns(draft.customColumnSets)
+            editor.mayDelete={ [weak self] set in
+                guard let self else{return}
+                guard !self.draft.viewModes.contains(where:{$0.customColumnSetID==set.id}) else{throw self.failure("This column set is used by a view mode. Change that mode first.")}
+                if self.draft.activeCustomColumnSetID==set.id {self.draft.activeCustomColumnSetID=""}
+            }
+            page.addArrangedSubview(editor)
+            let activate=NSButton(checkboxWithTitle:"Use the selected set as the default columns",target:nil,action:nil)
+            activate.state=draft.activeCustomColumnSetID.isEmpty ? .off:.on;page.addArrangedSubview(activate)
+            if let index=draft.customColumnSets.firstIndex(where:{$0.id==draft.activeCustomColumnSetID}) {editor.selectItem(at:index)}
+            readers.append{[weak self,weak editor,weak activate] in
+                guard let self,let editor,let activate else{return};let sets=try editor.values();self.draft.customColumnSets=sets
+                self.draft.activeCustomColumnSetID=activate.state == .on && sets.indices.contains(editor.picker.indexOfSelectedItem) ? sets[editor.picker.indexOfSelectedItem].id:""
+            }
+        case "View Modes":
+            let editor=DisplaySettingsEditors.modes(draft.viewModes,sets:{[weak self] in self?.draft.customColumnSets ?? []})
+            editor.mayDelete={ [weak self] mode in guard let self else{return};guard !self.draft.autoSwitchRules.contains(where:{$0.viewModeID==mode.id}) else{throw self.failure("This view mode is used by an automatic switching rule. Change or delete that rule first.")}}
+            page.addArrangedSubview(editor)
+            readers.append{[weak self,weak editor] in guard let self,let editor else{return};self.draft.viewModes=try editor.values()}
+        case "Auto Switch Mode":
+            checkbox("Automatically switch view mode on directory change",\.autoSwitchEnabled)
+            checkbox("Restore default mode when no rule matches",\.autoSwitchRestoreDefault)
+            page.addArrangedSubview(NSTextField(wrappingLabelWithString:"Rules are tested from top to bottom. The first matching rule wins. File conditions inspect only the current directory; no recursive scans are performed."))
+            let editor=DisplaySettingsEditors.rules(draft.autoSwitchRules,modes:{[weak self] in self?.draft.viewModes ?? []})
+            page.addArrangedSubview(editor)
+            readers.append{[weak self,weak editor] in guard let self,let editor else{return};self.draft.autoSwitchRules=try editor.values()}
         case "Folder Tabs":checkbox("Show tab header also when there is only one tab",\.tabsAlwaysVisible);integer("Limit tab length to characters",\.tabTitleMaximum,8...100);checkbox("Open new tabs near current tab",\.newTabBesideCurrent);checkbox("Close tab on double-click",\.tabsCloseOnDoubleClick);checkbox("Confirm closing all other tabs",\.confirmCloseAllTabs);checkbox("Show asterisk on locked tabs",\.tabsShowLockAsterisk)
         case "Thumbnails":integer("Thumbnail size (pixels)",\.thumbnailSize,64...256)
         case "Operation":checkbox("Save directory/tabs on exit",\.saveOnExit);checkbox("Open files/directories with a single click",\.singleClickOpen);checkbox("Select directories with Select All",\.selectionIncludesDirectories)
@@ -191,6 +218,7 @@ final class PreferencesController:NSWindowController,NSWindowDelegate,NSTableVie
         }
         scroller.contentView.scroll(to:.zero);scroller.reflectScrolledClipView(scroller.contentView)
     }
+    func selectPage(index:Int) {guard ConfigurationPage.all.indices.contains(index) else{return};categories.selectRowIndexes(IndexSet(integer:index),byExtendingSelection:false)}
     @objc private func restoreDefaults(){
         draft=CommanderConfiguration();cachedPages.removeAll();readers.removeAll()
         for view in page.arrangedSubviews{page.removeArrangedSubview(view);view.removeFromSuperview()}
@@ -208,6 +236,8 @@ final class PreferencesController:NSWindowController,NSWindowDelegate,NSTableVie
                 guard path.hasPrefix("/") || path.hasPrefix("~/") else{throw failure("Refresh exclusions must be absolute local folder paths, separated by semicolons.")}
             }
             try ShortcutSettings.validate(shortcuts:draft.customShortcuts,aliases:draft.commandAliases)
+            try CustomColumnSettings.validate(sets:draft.customColumnSets,activeID:draft.activeCustomColumnSetID)
+            try ViewModeSettings.validate(modes:draft.viewModes,rules:draft.autoSwitchRules,customColumnSets:draft.customColumnSets)
             draft=draft.normalized()
             for (enabled,path,title) in [(draft.externalViewerEnabled,draft.externalViewerPath,"Viewer"),(draft.externalEditorEnabled,draft.externalEditorPath,"Editor")] where enabled {
                 var directory:ObjCBool=false
@@ -231,5 +261,6 @@ private final class ConfigurationBrowseTarget:NSObject {
 }
 extension CommanderController {
     @objc func configuration(){if let existing=preferencesWindow{existing.showWindow(nil);existing.window?.makeKeyAndOrderFront(nil);return};preferencesWindow=PreferencesController(self);preferencesWindow?.window?.center();preferencesWindow?.showWindow(nil)}
+    func openPreferences(page:Int) {configuration();preferencesWindow?.selectPage(index:page)}
     func applyAppearancePreferences(){applyConfiguration(remember ? CommanderConfiguration.load() : runtimeConfig)}
 }
