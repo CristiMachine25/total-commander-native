@@ -131,7 +131,7 @@ final class PreferencesController:NSWindowController,NSWindowDelegate,NSTableVie
         }
         switch descriptor.title {
         case "Layout":
-            checkbox("Show button bar",\.showButtonBar);checkbox("Show drive combobox",\.showDriveList);checkbox("Show folder tabs",\.showFolderTabs);checkbox("Show current directory",\.showCurrentDirectory);checkbox("Show tabstop header",\.showColumnHeaders);checkbox("Show status bar",\.showStatusBar);checkbox("Show command line",\.showCommandLine);checkbox("Show function key buttons",\.showFunctionButtons);checkbox("Vertical arrangement (panels above/below)",\.verticalArrangement)
+            checkbox("Show button bar",\.showButtonBar);checkbox("Show drive buttons above each panel",\.showDriveButtons);checkbox("Show drive combobox",\.showDriveList);checkbox("Show folder tabs",\.showFolderTabs);checkbox("Show current directory",\.showCurrentDirectory);checkbox("Show tabstop header",\.showColumnHeaders);checkbox("Show status bar",\.showStatusBar);checkbox("Show command line",\.showCommandLine);checkbox("Show function key buttons",\.showFunctionButtons);checkbox("Vertical arrangement (panels above/below)",\.verticalArrangement)
         case "Display":
             checkbox("Show hidden files",\.showHidden)
             checkbox("Show square brackets around directories",\.directoryBrackets)

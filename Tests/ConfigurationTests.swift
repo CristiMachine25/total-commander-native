@@ -11,7 +11,7 @@ import Foundation
         defaults.set(18,forKey:"fileFontSize");defaults.set(29,forKey:"fileRowHeight");defaults.set(true,forKey:"showHidden");defaults.set("/Applications/TextEdit.app",forKey:"externalEditor")
         config=CommanderConfiguration.load(defaults:defaults)
         try check(config.fileFontSize==18 && config.rowHeight==29 && config.showHidden && config.externalEditorEnabled && config.externalEditorPath=="/Applications/TextEdit.app","Legacy four-field settings migrate without losing values")
-        config.showButtonBar=false;config.verticalArrangement=true;config.iconMode = .none;config.fileFontBold=true;config.foreground = .init(red:0.1,green:0.2,blue:0.3)
+        config.showDriveButtons=false;config.showButtonBar=false;config.verticalArrangement=true;config.iconMode = .none;config.fileFontBold=true;config.foreground = .init(red:0.1,green:0.2,blue:0.3)
         config.visibleColumns=["name","size"];config.columnWidths["size"]=140;config.sizeFormat = .gigabytes;config.dateOrder = .yearFirst
         config.newTabBesideCurrent=true;config.saveOnExit=false;config.singleClickOpen=true;config.historyLimit=42;config.thumbnailSize=192
         config.footerSizeFormat = .dynamicOneDecimal;config.ignoreListEnabled=true;config.ignorePatterns="*.bak;*.tmp";config.quickSearchMode = .alt;config.quickSearchMatchBeginning=false;config.quickSearchMatchEnding=true
@@ -24,7 +24,7 @@ import Foundation
         try check(defaults.string(forKey:"externalEditor")=="" && CommanderConfiguration.load(defaults:defaults).externalEditorPath=="/Applications/TextEdit.app","Disabling editor clears active legacy launch path without forgetting configured app")
         defaults.set(Data(#"{"showHidden":true,"sizeFormat":"future-format","fileFontSize":"bad","thumbnailSize":160}"#.utf8),forKey:CommanderConfiguration.defaultsKey)
         let partial=CommanderConfiguration.load(defaults:defaults)
-        try check(partial.showHidden && partial.sizeFormat == .bytes && partial.fileFontSize==13 && partial.thumbnailSize==160,"Partial/invalid typed fields recover individually without dropping valid settings")
+        try check(partial.showDriveButtons && partial.showHidden && partial.sizeFormat == .bytes && partial.fileFontSize==13 && partial.thumbnailSize==160,"Partial/invalid typed fields recover individually without dropping valid settings")
         defaults.set(Data("not json".utf8),forKey:CommanderConfiguration.defaultsKey)
         try check(CommanderConfiguration.load(defaults:defaults).fileFontSize==18,"Malformed schema safely recovers legacy values")
         var invalid=CommanderConfiguration();invalid.fileFontSize = .infinity;invalid.rowHeight = -100;invalid.iconSize=999;invalid.thumbnailSize=0;invalid.historyLimit=1000;invalid.tabTitleMaximum=0
