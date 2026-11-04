@@ -130,7 +130,7 @@ enum ReferenceCommandRouting {
     static let supportedIDs:Set<Int> = [
         3200,3201,3202,269,301,302,303,304,305,311,312,313,314,321,322,323,324,325,330,493,552,2023,2031,2032,2036,2037,
         560,561,490,501,503,508,509,510,518,521,522,523,524,525,526,527,529,530,531,532,533,
-        540,550,551,553,564,565,570,580,620,640,690,2017,2018,2020,2022,2121,2400,3001,24340
+        540,550,551,553,564,565,570,580,581,620,640,690,2017,2018,2020,2022,2121,2400,3001,24340
     ]
     static let localOnlyIDs:Set<Int> = [560,561,501,503,508,509,510,564,565,2020,2022,2400]
     static let selectedIDs:Set<Int> = [560,561,503,508,509,510,518,527,564,565,2017,2018,2022,2400]
@@ -188,7 +188,7 @@ extension CommanderController: NSMenuDelegate {
     }
     func referenceCommandEnabled(_ id:Int)->Bool {
         guard ReferenceCommandRouting.supportedIDs.contains(id),!busy,!activePane.isLoading else{return false}
-        if (activePane.isTreeMode || separateTrees.hasFocus) && ![3200,3201,3202,269,301,302,303,305,490,493,540,580,620,640,690,24340].contains(id){return false}
+        if (activePane.isTreeMode || separateTrees.hasFocus) && ![3200,3201,3202,269,301,302,303,305,490,493,540,580,581,620,640,690,24340].contains(id){return false}
         if ReferenceCommandRouting.localOnlyIDs.contains(id),activePane.location.localDirectory==nil{return false}
         if id==2020,otherPane.location.localDirectory==nil{return false}
         if ReferenceCommandRouting.selectedIDs.contains(id),activePane.selectedEntries.isEmpty{return false}
@@ -262,6 +262,7 @@ extension CommanderController: NSMenuDelegate {
         case 565:verifyChecksums()
         case 570:backFolder()
         case 580:saveConfiguration()
+        case 581:configurationFile()
         case 620:help()
         case 640:NSWorkspace.shared.open(URL(string:"https://www.ghisler.com/")!)
         case 690:NSApp.orderFrontStandardAboutPanel(nil)

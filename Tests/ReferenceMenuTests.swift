@@ -66,6 +66,7 @@ import Foundation
         try check(loaded.roots==catalog.roots,"Cached loader preserves original resource structure")
         try FileManager.default.removeItem(at:fixture.appendingPathComponent("TOTALCMD.INC"))
         try check(try ReferenceMenuCatalog.load(bundle:bundle)?.roots==loaded.roots,"Repeated menus use cached bundle resources without reparsing")
+        try check(ReferenceCommandRouting.isSupported(581),"Configuration-file editor is routed through original ID581")
         print("PASS: \(count) reference menu assertions; \(all.count) original items, \(ReferenceCommandRouting.supportedIDs.count) supported command IDs")
     }
 }

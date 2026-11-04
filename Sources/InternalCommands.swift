@@ -12,6 +12,7 @@ extension CommanderController {
         case "cm_srcquickview": toggleQuickView()
         case "cm_verticalpanels": verticalArrangement()
         case "cm_config": configuration()
+        case "cm_configchangeinifiles": configurationFile()
         case "cm_configsavepos": saveWindowPosition()
         case "cm_configsavesettings": saveConfiguration()
         case "cm_srcexecs": showPrograms()

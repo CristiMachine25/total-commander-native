@@ -44,6 +44,14 @@ extension NativeCommander {
         c.separateTrees.setState(1);precondition(!c.separateTrees.leftView.isHidden && c.separateTrees.rightView.isHidden)
         c.separateTrees.setState(2);precondition(!c.separateTrees.rightView.isHidden)
         c.separateTrees.setState(0);precondition(c.separateTrees.leftView.isHidden && c.separateTrees.rightView.isHidden)
+        let fileEditor=try ConfigurationFilesController(c)
+        var edited=c.runtimeConfig;edited.sizeFormat = .gigabytes
+        fileEditor.textView.string=String(decoding:try ConfigurationFiles.exportNative(edited),as:UTF8.self)
+        fileEditor.apply();precondition(c.runtimeConfig.sizeFormat == .gigabytes)
+        precondition(UserDefaults.standard.data(forKey:CommanderConfiguration.defaultsKey)==persistedConfiguration)
+        fileEditor.textView.string="{invalid}"
+        do {_=try fileEditor.parsedConfiguration();preconditionFailure("Invalid JSON accepted")}catch{}
+        fileEditor.close()
         print("Configuration UI integration passed: size cells, columns, row heights, layout, selection, thumbnails, tree, masks")
     }
 }

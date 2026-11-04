@@ -96,7 +96,7 @@ extension CommanderController {
         case "Help": item("Keyboard guide",#selector(help)); item("Implementation coverage",#selector(coverage))
         case "Net": item("FTP Connect…\tCtrl+F",#selector(connectFTP)); item("FTP New Connection…\tCtrl+N",#selector(connectFTP)); item("Mounted disks and network volumes…",#selector(showPlaces))
         case "Start": item("Focus command line",#selector(focusCommand))
-        case "Configuration": item("Options…",#selector(configuration)); item("Show hidden files",#selector(hidden(_:)))
+        case "Configuration": item("Options…",#selector(configuration)); item("Change Settings Files Directly…",#selector(configurationFile)); item("Show hidden files",#selector(hidden(_:)))
         default: break
         }
         return menu
