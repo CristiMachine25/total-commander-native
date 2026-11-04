@@ -1,4 +1,4 @@
-# Total Commander Native — 0.4.0 development build
+# Total Commander Native — 0.5.0 development build
 
 Native Swift/AppKit reconstruction for Apple Silicon and macOS 13 or later. It uses your Mac folders and mounted volumes directly, without Wine or a Windows runtime.
 
@@ -10,14 +10,20 @@ Implemented scopes include dual panes; Full, horizontal-column Brief, local dire
 
 Archive reading, extraction and integrity testing cover ZIP including ZIP64 and supported password ZIP, 7z, TAR, compressed TAR, GZIP, BZIP2, XZ and tested RAR fixtures. Format or encryption variants outside the tested subset can still fail explicitly. Mutation remains limited to supported ordinary ZIP: member add/delete/rename/edit/repack, including nested and FTP-origin writeback with recovery copies. Non-ZIP and password sessions are read-only. Split-file tools do not imply split-archive support.
 
-Configuration now has 52 persistent typed settings across 13 functional categories, within a 24-category navigation list. It includes layout, fonts/colors/icons, columns, file and footer size units, tabs, operation, viewer/editor, thumbnails, history, Quick Search and display-only Ignore List filtering. Size display includes the ten original styles plus clearly labeled native fixed-MB/GB choices and 1000/1024 unit bases. Unsupported categories explain gaps rather than showing inert controls. Settings use native JSON-backed preferences; they do not import or emulate all of wincmd.ini.
+Configuration now has 52 persistent typed settings across 13 functional categories, within a 24-category navigation list. It includes layout, fonts/colors/icons, columns, file and footer size units, tabs, operation, viewer/editor, thumbnails, history, Quick Search and display-only Ignore List filtering. Size display includes the ten original styles plus clearly labeled native fixed-MB/GB choices and 1000/1024 unit bases. Unsupported categories explain gaps rather than showing inert controls. Settings use native JSON-backed preferences. **Configuration → Change Settings Files Directly…** now opens a native JSON editor with validated Apply, full native JSON import/export, and a reported partial `wincmd.ini` import. Imported files are not modified implicitly; unsupported Windows keys are reported. See [configuration files](analysis/configuration-files.md).
 
 FTP requires MLSD and lacks resume, SFTP and complete original connection options. Synchronization does not mirror deletions. Ignore rules hide entries; they do not recursively exclude items from copy/move/synchronization. Windows DLL plugins, full Lister formats, every shortcut and original configuration option, custom columns, branch view, exact dialogs and pixel-identical rendering remain incomplete. See [remaining gaps](analysis/remaining-parity-gaps.md), [coverage](analysis/native-coverage.md), and [configuration details](analysis/configuration-coverage.md).
 
 Command input runs explicit POSIX shell commands with your user privileges or supported internal commands. It is not a Windows command interpreter.
 
+## Responsiveness and source history
+
+Formatting now reuses bounded thread-local formatters; the settings dialog retains visited category controls and avoids a redundant directory scan on Apply. Pane selection uses direct row lookup, unchanged/appearance-only configuration avoids refiltering/resorting, file cells reuse views, and directory listing reuses prefetched metadata. Local measurements show improvements in these specific paths, not Windows performance parity: [settings/formatters](analysis/configuration-performance.md), [pane operations](analysis/pane-responsiveness.md), [directory listing](analysis/directory-listing-performance.md). First-open settings latency did not materially improve, and local directory listing and first-time icon lookup can still block.
+
+The private source repository is [CristiMachine25/total-commander-native](https://github.com/CristiMachine25/total-commander-native). Its eight baseline commits organize previously implemented work retrospectively; subsequent commits record new changes separately. They are not a fabricated historical sequence of the original development.
+
 ## Build and test
 
 Run `python3 build.py` with Xcode command-line tools, then `bash test.sh`. FTP fixture tests require Python with pyftpdlib and pyOpenSSL; choose it with `FTP_TEST_PYTHON=/path/to/python bash test.sh`. Test servers bind localhost and use disposable fixtures. Bundled 7-Zip is native ARM64. Preferences use `local.totalcommander.native`.
 
-This is an independent reconstruction, not an official Ghisler release. Original resource and archive-tool notices are in [THIRD-PARTY.txt](THIRD-PARTY.txt). The release-specific integrated, mounted-DMG and visible validation ledger is [TEST-RESULTS.md](TEST-RESULTS.md); earlier build checks do not certify every 0.4.0 change.
+This is an independent reconstruction, not an official Ghisler release. Original resource and archive-tool notices are in [THIRD-PARTY.txt](THIRD-PARTY.txt). The release-specific integrated, mounted-DMG and visible validation ledger is [TEST-RESULTS.md](TEST-RESULTS.md); earlier build checks do not certify every 0.5.0 change.

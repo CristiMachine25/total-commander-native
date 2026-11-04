@@ -1,4 +1,4 @@
-# Current interface parity audit — 0.4.0
+# Current interface parity audit — 0.5.0
 
 Reference: Total Commander 11.58.1 KEYBOARD.TXT, WCMD_ENG.MNU, TOTALCMD.INC and locally extracted configuration/help pages. These document intent; paired original/native runtime equivalence is not established.
 
@@ -8,7 +8,8 @@ Reference: Total Commander 11.58.1 KEYBOARD.TXT, WCMD_ENG.MNU, TOTALCMD.INC and 
 | Tree and separate trees | Local directory tree pane; off/one/two separate trees, child expansion/navigation, current-path reveal and configured hidden/ignore filtering | Native outline controls; virtual-provider trees and complete original tree options remain incomplete |
 | Thumbnails | Bounded image thumbnails, selection/navigation and configurable size | No complete Lister/OLE provider ecosystem, EXIF custom fields or original persistent database |
 | Quick View | Opposite-pane text/hex/image preview follows selection; bounded remote materialization | No multimedia/plugins, recursive directory summary or separate-following Ctrl+Shift+Q window |
-| Configuration | 24 category navigation entries, 13 with functional controls; 52 persisted typed settings | Remaining pages explicitly explain gaps. All original settings, original dialog geometry and INI compatibility are not implemented |
+| Configuration | 24 category navigation entries, 13 with functional controls; 52 persisted typed settings | Remaining pages explicitly explain gaps. All original settings and original dialog geometry remain incomplete; INI import is a documented subset, not full compatibility |
+| Configuration files | Original menu ID 581 opens a native JSON editor; strict full native import/export, reported partial original INI merge, and stale-editor protection | Native JSON rather than original INI direct editing; no complete INI export/roundtrip, redirection, plugin or shortcut configuration |
 | Size display | Original ten Tabstops styles, decimal/binary units and independent footer style; native fixed MB/GB options clearly distinguished | Custom separators and independent progress units are incomplete; not every locale/original rounding combination has paired evidence |
 | Quick Search and Ignore List | Configured modifier mode and beginning/ending semantics; display filtering including tree children | No complete original Quick Search dialog; ignore does not recursively exclude copy/move/sync contents |
 | Provider navigation | Main panes/tabs/history for local, archive and FTP; provider root/parent semantics and display paths; asynchronous archive opening | Complete behavior across every format, shortcut and error context remains unverified |
@@ -25,6 +26,8 @@ Unsupported modified destructive shortcuts must not fall through to less-modifie
 
 ## Validation boundary
 
-Configuration model and real dialog fixtures passed 46 and 29 assertions respectively; the latter navigates categories, checks scrolling, applies runtime values and verifies Cancel. Broad archive-format fixtures passed 44 and split/combine fixtures 36. Tree/thumbnail/separate-tree and latest settings consumers are subject to the expanded integrated and mounted-artifact run recorded in [TEST-RESULTS.md](../TEST-RESULTS.md). Earlier Brief/Quick View/ZIP/FTP visible checks remain evidence for those earlier scoped paths, not blanket validation of the newest build.
+The 0.5 changes have focused configuration, configuration-file, formatter-isolation and pane regression coverage, with local before/after measurements retained in [configuration performance](configuration-performance.md), [pane responsiveness](pane-responsiveness.md), and [directory listing performance](directory-listing-performance.md). These are not paired Windows measurements. First-open configuration latency is essentially unchanged; ordinary local listing remains synchronous.
+
+All 33 distinct test executions passed, including the separately completed final pane/provider checks; see the release ledger for execution details. [TEST-RESULTS.md](../TEST-RESULTS.md) records the final suite and exact packaged-artifact results. Earlier mounted 0.4 checks establish only their named interactions and do not certify new 0.5 changes.
 
 [Configuration coverage](configuration-coverage.md) lists actual settings and gaps. [Native coverage](native-coverage.md) and [remaining requirements](remaining-parity-gaps.md) are synchronized with this scope. None certifies complete Total Commander parity.

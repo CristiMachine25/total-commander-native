@@ -1,5 +1,28 @@
 # Native validation ledger
 
+## 0.5.0 validation — 4 November 2026
+
+All 33 distinct test executions passed. The initial harness run completed through panel tests; removing duplicate test invocations while it was running interrupted the shell's remaining script read. The final PaneView, PanePerformance and ProviderIntegration executions were therefore run explicitly against a frozen source snapshot and all exited 0. The combined evidence is [0.5-final-test-run.log](analysis/0.5-final-test-run.log). Two repeated formatter/file-service runs in that log are not additional coverage.
+
+New/expanded checks: 1,001 formatter isolation assertions, 44 configuration-file assertions, 37 real configuration-dialog assertions including stale-editor rejection, 37 filesystem assertions including directory/file/broken symlinks, 13 large-pane regression assertions, 30 pane-view assertions, and 31 original-menu assertions. The optimized bundled application also passed its configuration and UI smoke, including JSON editor Apply and preference preservation.
+
+Mounted optimized 0.5 UI observations:
+
+- Original Configuration → Change Settings Files Directly opened the editable native JSON window.
+- Export through NSSavePanel wrote a valid version 1 JSON file containing the current native settings; its contents were independently checked.
+- Importing a disposable INI reported two imported options and one unsupported option, staged the correct size format/unit base, and did not apply without the Apply action.
+- Scrolled a 120-file disposable listing, selected a reused row and moved with Down: filename, extension, size, tooltip and white-on-blue selection remained correct.
+- Restored the home folder. Existing automatic size units remained intact.
+
+Measured local performance, with scopes and limitations in the linked reports:
+
+- 10k size formats: 208.61 → 13.03 ms; dates: 976.12 → 19.63 ms.
+- 80 settings category switches/layouts: 2302.28 → 540.26 ms; first open approximately unchanged.
+- 10k-entry directory listing: 144.81 → 121.23 ms; local navigation remains synchronous.
+- Single-selection footer over 10k rows: 0.8872 → 0.0042 ms/op. The no-op Apply benchmark is not a measurement of changed settings.
+
+See [settings performance](analysis/configuration-performance.md), [pane performance](analysis/pane-responsiveness.md), and [listing performance](analysis/directory-listing-performance.md). These establish measured improvements on this Mac, not speed equivalence with Windows. Backend FTP tests used disposable localhost servers; this release did not repeat the historical visible production-style FTP workflow. Full original settings/plugin/visual parity remains incomplete. Final artifact identity and signature/image verification are provided in the separate release verification asset.
+
 ## 0.4.0 validation — 4 November 2026
 
 The stable-snapshot run completed **all 30 test executions successfully** (exit 0). Evidence: [0.4-final-test-run.log](analysis/0.4-final-test-run.log). This includes the existing filesystem, editor, transfers, synchronization, archive, FTP, provider, keyboard and menu suites, plus the new configuration and view coverage. Counts are assertions within their respective suites, not independent application features.
