@@ -137,4 +137,8 @@ xcrun swiftc -whole-module-optimization -swift-version 5 -framework AppKit -fram
 "$TEST_WORK/display-parity"
 xcrun swiftc -whole-module-optimization -swift-version 5 -framework AppKit -framework ImageIO "${PANE_SOURCES[@]}" "$TEST_WORK/MainWithoutEntry.swift" Tests/HistorySettingsTests.swift -o "$TEST_WORK/history-settings"
 "$TEST_WORK/history-settings"
+# Expose only the drive inventory refresh seam in a disposable copy; production remains private.
+sed 's/private func refreshDrives(/func refreshDrives(/' "$TEST_WORK/MainWithoutEntry.swift" > "$TEST_WORK/MainDriveTests.swift"
+xcrun swiftc -whole-module-optimization -swift-version 5 -framework AppKit -framework ImageIO "${PANE_SOURCES[@]}" "$TEST_WORK/MainDriveTests.swift" Tests/DrivePaneTests.swift -o "$TEST_WORK/drive-pane"
+"$TEST_WORK/drive-pane"
 printf '%s\n' 'All native backend and provider integration suites passed.'
