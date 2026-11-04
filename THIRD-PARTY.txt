@@ -1,3 +1,5 @@
+The MIT license in LICENSE applies to original project code and documentation only. The third-party material listed below is excluded and retains its original rights and terms.
+
 Independent native implementation. Total Commander is a product of Christian Ghisler / Ghisler Software GmbH. Reference version:11.58.1, https://www.ghisler.com/
 
 7-Zip 26.05, native ARM64 command-line archive engine.

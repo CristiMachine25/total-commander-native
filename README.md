@@ -12,7 +12,7 @@ A native, keyboard-driven dual-pane file manager for **Apple Silicon · macOS 13
 
 ## Install
 
-1. Open the [releases page](https://github.com/CristiMachine25/total-commander-native/releases) while signed in with access to this private repository.
+1. Open the [releases page](https://github.com/CristiMachine25/total-commander-native/releases).
 2. Download `Total-Commander-Native-development.dmg`.
 3. Open the disk image, drag **Total Commander Native** into **Applications**, and launch it.
 
@@ -87,3 +87,9 @@ python3 package.py
 Packaging rejects a compiled stage whose source hashes no longer match the checkout, verifies the ad-hoc signature and DMG, and archives the committed source. Generated release artifacts are excluded from Git.
 
 [Source-history notes](HISTORY.md) · [Reconstruction evidence](analysis/decompilation.md) · [Third-party notices](THIRD-PARTY.txt)
+
+## License
+
+Original code and documentation in this project are licensed under the [MIT License](LICENSE).
+
+Third-party components and material are excluded from that grant and retain their original rights and terms. This includes 7-Zip, the Total Commander application icon and toolbar artwork, and the original menu and command definitions. See [third-party notices](THIRD-PARTY.txt). The MIT license does not grant rights to those materials or to the Total Commander name or trademarks.
