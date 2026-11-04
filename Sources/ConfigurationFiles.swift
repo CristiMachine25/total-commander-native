@@ -22,11 +22,12 @@ enum ConfigurationFileError:LocalizedError {
 enum ConfigurationFiles {
     static let maximumBytes=1_048_576
     static let version2Keys:Set<String> = ["tabsCloseOnDoubleClick","confirmCloseAllTabs","tabsShowLockAsterisk","customShortcuts","commandAliases","alternatingRowBackground","alternatingBackground","copyPreserveDirectoryDates","copyPreserveFileDates","copyPreservePermissions","copyVerifyAfterCopy","copyBufferSizeKB","copyDefaultCollision","confirmCopyMove","confirmOverwrite","deleteToTrash","confirmDelete","refreshOnActivate","autoRefreshEnabled","autoRefreshMetadata","autoRefreshOnlyForeground","autoRefreshExcludedPaths","autoRefreshUpdateHeader","dateSeparator","timeSeparator","use12HourTime","zipCompressionLevel","zipVerifyAfterPacking","archiveSetDateToNewest","browseArchivesAsDirectories","ftpPassiveMode","ftpConnectTimeout","ftpTransferTimeout","ftpOpenPanel"]
+    static let version3Keys:Set<String> = ["customColumnSets","activeCustomColumnSetID","viewModes","autoSwitchRules","autoSwitchEnabled","autoSwitchRestoreDefault"]
     static let format="total-commander-native-configuration"
     private struct Envelope:Codable {let format:String;let version:Int;let configuration:CommanderConfiguration}
     static func exportNative(_ configuration:CommanderConfiguration)throws->Data {
         let encoder=JSONEncoder();encoder.outputFormatting=[.prettyPrinted,.sortedKeys]
-        let result=try encoder.encode(Envelope(format:format,version:2,configuration:configuration.normalized()))
+        let result=try encoder.encode(Envelope(format:format,version:3,configuration:configuration.normalized()))
         guard result.count<=maximumBytes else {throw ConfigurationFileError.invalid("Configuration exceeds the 1 MiB limit.")}
         return result
     }
@@ -35,9 +36,9 @@ enum ConfigurationFiles {
         guard let object=try JSONSerialization.jsonObject(with:data) as? [String:Any],
               Set(object.keys)==Set(["format","version","configuration"]),
               object["format"] as? String == format,
-              let version=object["version"] as? NSNumber,CFGetTypeID(version) != CFBooleanGetTypeID(),[1.0,2.0].contains(version.doubleValue),
+              let version=object["version"] as? NSNumber,CFGetTypeID(version) != CFBooleanGetTypeID(),[1.0,2.0,3.0].contains(version.doubleValue),
               object["configuration"] is [String:Any] else {
-            throw ConfigurationFileError.invalid("Not a supported native configuration file (version 1 or 2).")
+            throw ConfigurationFileError.invalid("Not a supported native configuration file (version 1, 2 or 3).")
         }
         try rejectDuplicateKeys(data)
         let envelope=try JSONDecoder().decode(Envelope.self,from:data)
@@ -45,15 +46,18 @@ enum ConfigurationFiles {
         // CommanderConfiguration's persistence decoder deliberately tolerates old/malformed
         // stored keys. File import must not silently replace bad input with those defaults.
         var canonical=try JSONSerialization.jsonObject(with:exportNative(normalized)) as! [String:Any]
-        if envelope.version==1 {
+        if envelope.version<3 {
             var fields=canonical["configuration"] as! [String:Any]
-            for key in version2Keys {fields.removeValue(forKey:key)}
-            canonical["configuration"]=fields;canonical["version"]=1
+            for key in version3Keys {fields.removeValue(forKey:key)}
+            if envelope.version==1 {for key in version2Keys {fields.removeValue(forKey:key)}}
+            canonical["configuration"]=fields;canonical["version"]=envelope.version
         }
         guard equalJSON(object,canonical) else {
             throw ConfigurationFileError.invalid("Configuration contains missing, unknown, invalid, or out-of-range settings. No settings were changed.")
         }
         try ShortcutSettings.validate(shortcuts:normalized.customShortcuts,aliases:normalized.commandAliases)
+        try CustomColumnSettings.validate(sets:normalized.customColumnSets,activeID:normalized.activeCustomColumnSetID)
+        try ViewModeSettings.validate(modes:normalized.viewModes,rules:normalized.autoSwitchRules,customColumnSets:normalized.customColumnSets)
         return normalized
     }
     private static func rejectDuplicateKeys(_ data:Data)throws {

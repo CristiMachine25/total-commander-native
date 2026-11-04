@@ -10,13 +10,24 @@ import Darwin
         let data=try ConfigurationFiles.exportNative(configuration)
         try check(try ConfigurationFiles.importNative(data)==configuration,"All native settings round trip")
         try check(try ConfigurationFiles.importNative(ConfigurationFiles.exportNative(CommanderConfiguration()))==CommanderConfiguration(),"Default omitted optional field round trip")
+        var display=configuration
+        let column=CustomColumnDefinition(id:"size-column",title:"Size",expression:"[=tc.size.mbytes]",width:100,alignment:.right)
+        display.customColumnSets=[CustomColumnSet(id:"media",name:"Media",columns:[column])];display.activeCustomColumnSetID="media"
+        var mode=CommanderViewMode();mode.id="media-mode";mode.name="Media";mode.columnsView = .full;mode.customColumnSetID="media";mode.sortColumn="custom.size-column"
+        var condition=CommanderViewCondition();condition.kind = .fileMask;condition.value="*.jpg";condition.fileMatch = .half
+        var rule=CommanderAutoSwitchRule();rule.id="media-rule";rule.name="Images";rule.viewModeID=mode.id;rule.conditions=[condition]
+        display.viewModes=[mode];display.autoSwitchRules=[rule];display.autoSwitchEnabled=true
+        try check(try ConfigurationFiles.importNative(ConfigurationFiles.exportNative(display))==display,"Nested columns, modes and rules round trip")
+        var invalidDisplay=try JSONSerialization.jsonObject(with:ConfigurationFiles.exportNative(display)) as! [String:Any]
+        var invalidFields=invalidDisplay["configuration"] as! [String:Any];invalidFields["customColumnSets"]=[];invalidDisplay["configuration"]=invalidFields
+        try rejects(JSONSerialization.data(withJSONObject:invalidDisplay),"Dangling custom-column reference rejected")
         let object=try JSONSerialization.jsonObject(with:data) as! [String:Any]
         func changed(_ action:(inout [String:Any])->Void)throws->Data {var copy=object;action(&copy);return try JSONSerialization.data(withJSONObject:copy)}
         try rejects(Data(),"Empty rejected")
         try rejects(Data(repeating:65,count:ConfigurationFiles.maximumBytes+1),"Oversized rejected")
         try rejects(Data("not json".utf8),"Malformed rejected")
-        try rejects(Data(String(decoding:data,as:UTF8.self).replacingOccurrences(of:"\"version\" : 2",with:"\"version\" : 2, \"version\" : 2").utf8),"Duplicate JSON keys rejected")
-        try rejects(changed{$0["version"]=3},"Future version rejected")
+        try rejects(Data(String(decoding:data,as:UTF8.self).replacingOccurrences(of:"\"version\" : 3",with:"\"version\" : 3, \"version\" : 3").utf8),"Duplicate JSON keys rejected")
+        try rejects(changed{$0["version"]=4},"Future version rejected")
         try rejects(changed{$0["version"]=true},"Boolean version rejected")
         try rejects(changed{$0["format"]="other"},"Wrong format rejected")
         try rejects(changed{$0["extra"]=true},"Unknown envelope rejected")
@@ -97,9 +108,17 @@ import Darwin
         for rejected in [fifo,root,huge] {
             do{_=try ConfigurationFiles.readData(from:rejected);throw NSError(domain:"TestFailure",code:1)}catch let e as NSError{if e.domain=="TestFailure"{throw e};count+=1}
         }
+        var version2=object;version2["version"]=2
+        var previousFields=version2["configuration"] as! [String:Any]
+        for key in ConfigurationFiles.version3Keys {previousFields.removeValue(forKey:key)}
+        version2["configuration"]=previousFields
+        let migrated2=try ConfigurationFiles.importNative(JSONSerialization.data(withJSONObject:version2))
+        try check(migrated2==configuration,"Version 2 migrates with empty display profiles and preserves existing settings")
+        version2["configuration"]=[:]
+        try rejects(JSONSerialization.data(withJSONObject:version2),"Version 2 missing existing settings rejected")
         var version1=object;version1["version"]=1
         var legacyFields=version1["configuration"] as! [String:Any]
-        for key in ConfigurationFiles.version2Keys {legacyFields.removeValue(forKey:key)}
+        for key in ConfigurationFiles.version2Keys.union(ConfigurationFiles.version3Keys) {legacyFields.removeValue(forKey:key)}
         version1["configuration"]=legacyFields
         let migrated=try ConfigurationFiles.importNative(JSONSerialization.data(withJSONObject:version1))
         try check(migrated.sizeFormat == configuration.sizeFormat && migrated.copyVerifyAfterCopy==false && migrated.zipCompressionLevel==6,"Version 1 exports migrate with new defaults and retain existing fields")

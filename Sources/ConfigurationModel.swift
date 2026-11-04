@@ -106,10 +106,22 @@ struct CommanderConfiguration:Codable,Equatable {
     var tabsCloseOnDoubleClick:Bool = false
     var confirmCloseAllTabs:Bool = true
     var tabsShowLockAsterisk:Bool = true
+    var customColumnSets:[CustomColumnSet] = []
+    var activeCustomColumnSetID:String = ""
+    var viewModes:[CommanderViewMode] = []
+    var autoSwitchRules:[CommanderAutoSwitchRule] = []
+    var autoSwitchEnabled:Bool = false
+    var autoSwitchRestoreDefault:Bool = true
     init() {}
-    enum CodingKeys:String,CodingKey {case tabsCloseOnDoubleClick,confirmCloseAllTabs,tabsShowLockAsterisk,customShortcuts,commandAliases,alternatingRowBackground,alternatingBackground,copyPreserveDirectoryDates,copyPreserveFileDates,copyPreservePermissions,copyVerifyAfterCopy,copyBufferSizeKB,copyDefaultCollision,confirmCopyMove,confirmOverwrite,deleteToTrash,confirmDelete,refreshOnActivate,autoRefreshEnabled,autoRefreshMetadata,autoRefreshOnlyForeground,autoRefreshExcludedPaths,autoRefreshUpdateHeader,dateSeparator,timeSeparator,use12HourTime,zipCompressionLevel,zipVerifyAfterPacking,archiveSetDateToNewest,browseArchivesAsDirectories,ftpPassiveMode,ftpConnectTimeout,ftpTransferTimeout,ftpOpenPanel,showButtonBar,showDriveList,showFolderTabs,showCurrentDirectory,showColumnHeaders,showStatusBar,showCommandLine,showFunctionButtons,verticalArrangement,showHidden,directoriesFirst,caseSensitiveSort,iconMode,iconSize,fileFontName,fileFontSize,fileFontBold,rowHeight,foreground,background,markedForeground,selectionBackground,selectionForeground,visibleColumns,columnWidths,extensionStyle,sizeFormat,useDecimalUnits,footerSizeFormat,ignoreListEnabled,ignorePatterns,quickSearchMode,quickSearchMatchBeginning,quickSearchMatchEnding,dateOrder,showSeconds,showCentury,tabsAlwaysVisible,tabTitleMaximum,newTabBesideCurrent,saveOnExit,singleClickOpen,selectionIncludesDirectories,historyLimit,externalEditorEnabled,externalEditorPath,externalViewerEnabled,externalViewerPath,thumbnailSize,viewerWordWrap,viewerFontName,viewerFontSize}
+    enum CodingKeys:String,CodingKey {case customColumnSets,activeCustomColumnSetID,viewModes,autoSwitchRules,autoSwitchEnabled,autoSwitchRestoreDefault,tabsCloseOnDoubleClick,confirmCloseAllTabs,tabsShowLockAsterisk,customShortcuts,commandAliases,alternatingRowBackground,alternatingBackground,copyPreserveDirectoryDates,copyPreserveFileDates,copyPreservePermissions,copyVerifyAfterCopy,copyBufferSizeKB,copyDefaultCollision,confirmCopyMove,confirmOverwrite,deleteToTrash,confirmDelete,refreshOnActivate,autoRefreshEnabled,autoRefreshMetadata,autoRefreshOnlyForeground,autoRefreshExcludedPaths,autoRefreshUpdateHeader,dateSeparator,timeSeparator,use12HourTime,zipCompressionLevel,zipVerifyAfterPacking,archiveSetDateToNewest,browseArchivesAsDirectories,ftpPassiveMode,ftpConnectTimeout,ftpTransferTimeout,ftpOpenPanel,showButtonBar,showDriveList,showFolderTabs,showCurrentDirectory,showColumnHeaders,showStatusBar,showCommandLine,showFunctionButtons,verticalArrangement,showHidden,directoriesFirst,caseSensitiveSort,iconMode,iconSize,fileFontName,fileFontSize,fileFontBold,rowHeight,foreground,background,markedForeground,selectionBackground,selectionForeground,visibleColumns,columnWidths,extensionStyle,sizeFormat,useDecimalUnits,footerSizeFormat,ignoreListEnabled,ignorePatterns,quickSearchMode,quickSearchMatchBeginning,quickSearchMatchEnding,dateOrder,showSeconds,showCentury,tabsAlwaysVisible,tabTitleMaximum,newTabBesideCurrent,saveOnExit,singleClickOpen,selectionIncludesDirectories,historyLimit,externalEditorEnabled,externalEditorPath,externalViewerEnabled,externalViewerPath,thumbnailSize,viewerWordWrap,viewerFontName,viewerFontSize}
     init(from decoder:Decoder)throws {
         let values=try decoder.container(keyedBy:CodingKeys.self)
+        customColumnSets=(try? values.decode([CustomColumnSet].self,forKey:.customColumnSets)) ?? []
+        activeCustomColumnSetID=(try? values.decode(String.self,forKey:.activeCustomColumnSetID)) ?? ""
+        viewModes=(try? values.decode([CommanderViewMode].self,forKey:.viewModes)) ?? []
+        autoSwitchRules=(try? values.decode([CommanderAutoSwitchRule].self,forKey:.autoSwitchRules)) ?? []
+        autoSwitchEnabled=(try? values.decode(Bool.self,forKey:.autoSwitchEnabled)) ?? false
+        autoSwitchRestoreDefault=(try? values.decode(Bool.self,forKey:.autoSwitchRestoreDefault)) ?? true
         tabsCloseOnDoubleClick=(try? values.decode(Bool.self,forKey:.tabsCloseOnDoubleClick)) ?? false
         confirmCloseAllTabs=(try? values.decode(Bool.self,forKey:.confirmCloseAllTabs)) ?? true
         tabsShowLockAsterisk=(try? values.decode(Bool.self,forKey:.tabsShowLockAsterisk)) ?? true
@@ -222,6 +234,14 @@ struct CommanderConfiguration:Codable,Equatable {
         c.ftpConnectTimeout=min(300,max(1,c.ftpConnectTimeout));c.ftpTransferTimeout=min(86400,max(1,c.ftpTransferTimeout));c.ftpOpenPanel=min(3,max(0,c.ftpOpenPanel))
         c.autoRefreshExcludedPaths=String(c.autoRefreshExcludedPaths.prefix(16384))
         c.dateSeparator=String(c.dateSeparator.filter{!$0.isNewline}.prefix(3));c.timeSeparator=String(c.timeSeparator.filter{!$0.isNewline}.prefix(3))
+        // Stored preferences may be older or damaged. Keep unrelated preferences usable;
+        // strict file import compares the normalized form and rejects any discarded data.
+        do {
+            try CustomColumnSettings.validate(sets:c.customColumnSets,activeID:c.activeCustomColumnSetID)
+            try ViewModeSettings.validate(modes:c.viewModes,rules:c.autoSwitchRules,customColumnSets:c.customColumnSets)
+        } catch {
+            c.customColumnSets=[];c.activeCustomColumnSetID="";c.viewModes=[];c.autoSwitchRules=[];c.autoSwitchEnabled=false
+        }
         return c
     }
     static func load(defaults:UserDefaults = .standard)->CommanderConfiguration {
