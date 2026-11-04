@@ -72,10 +72,53 @@ struct CommanderConfiguration:Codable,Equatable {
     var viewerWordWrap:Bool = false
     var viewerFontName:String = "Menlo"
     var viewerFontSize:Double = 12
+    var copyPreserveDirectoryDates:Bool = true
+    var copyPreserveFileDates:Bool = true
+    var copyPreservePermissions:Bool = true
+    var copyVerifyAfterCopy:Bool = false
+    var copyBufferSizeKB:Int = 1024
+    var copyDefaultCollision:String = "ask"
+    var confirmCopyMove:Bool = true
+    var confirmOverwrite:Bool = true
+    var deleteToTrash:Bool = true
+    var confirmDelete:Bool = true
+    var refreshOnActivate:Bool = true
+    var autoRefreshEnabled:Bool = false
+    var autoRefreshMetadata:Bool = true
+    var autoRefreshOnlyForeground:Bool = true
+    var autoRefreshExcludedPaths:String = ""
+    var autoRefreshUpdateHeader:Bool = true
+    var dateSeparator:String = ""
+    var timeSeparator:String = ""
+    var use12HourTime:Bool = false
+    var zipCompressionLevel:Int = 6
+    var zipVerifyAfterPacking:Bool = true
+    var archiveSetDateToNewest:Bool = false
+    var browseArchivesAsDirectories:Bool = true
+    var ftpPassiveMode:Bool = true
+    var ftpConnectTimeout:Int = 15
+    var ftpTransferTimeout:Int = 600
+    var ftpOpenPanel:Int = 0
+    var alternatingRowBackground:Bool = false
+    var alternatingBackground:ConfigurationColor = .init(red:0.96,green:0.96,blue:0.96)
+    var customShortcuts:String = ""
+    var commandAliases:String = ""
+    var tabsCloseOnDoubleClick:Bool = false
+    var confirmCloseAllTabs:Bool = true
+    var tabsShowLockAsterisk:Bool = true
     init() {}
-    enum CodingKeys:String,CodingKey {case showButtonBar,showDriveList,showFolderTabs,showCurrentDirectory,showColumnHeaders,showStatusBar,showCommandLine,showFunctionButtons,verticalArrangement,showHidden,directoriesFirst,caseSensitiveSort,iconMode,iconSize,fileFontName,fileFontSize,fileFontBold,rowHeight,foreground,background,markedForeground,selectionBackground,selectionForeground,visibleColumns,columnWidths,extensionStyle,sizeFormat,useDecimalUnits,footerSizeFormat,ignoreListEnabled,ignorePatterns,quickSearchMode,quickSearchMatchBeginning,quickSearchMatchEnding,dateOrder,showSeconds,showCentury,tabsAlwaysVisible,tabTitleMaximum,newTabBesideCurrent,saveOnExit,singleClickOpen,selectionIncludesDirectories,historyLimit,externalEditorEnabled,externalEditorPath,externalViewerEnabled,externalViewerPath,thumbnailSize,viewerWordWrap,viewerFontName,viewerFontSize}
+    enum CodingKeys:String,CodingKey {case tabsCloseOnDoubleClick,confirmCloseAllTabs,tabsShowLockAsterisk,customShortcuts,commandAliases,alternatingRowBackground,alternatingBackground,copyPreserveDirectoryDates,copyPreserveFileDates,copyPreservePermissions,copyVerifyAfterCopy,copyBufferSizeKB,copyDefaultCollision,confirmCopyMove,confirmOverwrite,deleteToTrash,confirmDelete,refreshOnActivate,autoRefreshEnabled,autoRefreshMetadata,autoRefreshOnlyForeground,autoRefreshExcludedPaths,autoRefreshUpdateHeader,dateSeparator,timeSeparator,use12HourTime,zipCompressionLevel,zipVerifyAfterPacking,archiveSetDateToNewest,browseArchivesAsDirectories,ftpPassiveMode,ftpConnectTimeout,ftpTransferTimeout,ftpOpenPanel,showButtonBar,showDriveList,showFolderTabs,showCurrentDirectory,showColumnHeaders,showStatusBar,showCommandLine,showFunctionButtons,verticalArrangement,showHidden,directoriesFirst,caseSensitiveSort,iconMode,iconSize,fileFontName,fileFontSize,fileFontBold,rowHeight,foreground,background,markedForeground,selectionBackground,selectionForeground,visibleColumns,columnWidths,extensionStyle,sizeFormat,useDecimalUnits,footerSizeFormat,ignoreListEnabled,ignorePatterns,quickSearchMode,quickSearchMatchBeginning,quickSearchMatchEnding,dateOrder,showSeconds,showCentury,tabsAlwaysVisible,tabTitleMaximum,newTabBesideCurrent,saveOnExit,singleClickOpen,selectionIncludesDirectories,historyLimit,externalEditorEnabled,externalEditorPath,externalViewerEnabled,externalViewerPath,thumbnailSize,viewerWordWrap,viewerFontName,viewerFontSize}
     init(from decoder:Decoder)throws {
         let values=try decoder.container(keyedBy:CodingKeys.self)
+        tabsCloseOnDoubleClick=(try? values.decode(Bool.self,forKey:.tabsCloseOnDoubleClick)) ?? false
+        confirmCloseAllTabs=(try? values.decode(Bool.self,forKey:.confirmCloseAllTabs)) ?? true
+        tabsShowLockAsterisk=(try? values.decode(Bool.self,forKey:.tabsShowLockAsterisk)) ?? true
+
+        customShortcuts=(try? values.decode(String.self,forKey:.customShortcuts)) ?? ""
+        commandAliases=(try? values.decode(String.self,forKey:.commandAliases)) ?? ""
+
+        alternatingRowBackground=(try? values.decode(Bool.self,forKey:.alternatingRowBackground)) ?? false
+        alternatingBackground=(try? values.decode(ConfigurationColor.self,forKey:.alternatingBackground)) ?? .init(red:0.96,green:0.96,blue:0.96)
         showButtonBar=(try? values.decode(Bool.self,forKey:.showButtonBar)) ?? true
         showDriveList=(try? values.decode(Bool.self,forKey:.showDriveList)) ?? true
         showFolderTabs=(try? values.decode(Bool.self,forKey:.showFolderTabs)) ?? true
@@ -128,9 +171,37 @@ struct CommanderConfiguration:Codable,Equatable {
         viewerWordWrap=(try? values.decode(Bool.self,forKey:.viewerWordWrap)) ?? false
         viewerFontName=(try? values.decode(String.self,forKey:.viewerFontName)) ?? "Menlo"
         viewerFontSize=(try? values.decode(Double.self,forKey:.viewerFontSize)) ?? 12
+        copyPreserveDirectoryDates=(try? values.decode(Bool.self,forKey:.copyPreserveDirectoryDates)) ?? true
+        copyPreserveFileDates=(try? values.decode(Bool.self,forKey:.copyPreserveFileDates)) ?? true
+        copyPreservePermissions=(try? values.decode(Bool.self,forKey:.copyPreservePermissions)) ?? true
+        copyVerifyAfterCopy=(try? values.decode(Bool.self,forKey:.copyVerifyAfterCopy)) ?? false
+        copyBufferSizeKB=(try? values.decode(Int.self,forKey:.copyBufferSizeKB)) ?? 1024
+        copyDefaultCollision=(try? values.decode(String.self,forKey:.copyDefaultCollision)) ?? "ask"
+        confirmCopyMove=(try? values.decode(Bool.self,forKey:.confirmCopyMove)) ?? true
+        confirmOverwrite=(try? values.decode(Bool.self,forKey:.confirmOverwrite)) ?? true
+        deleteToTrash=(try? values.decode(Bool.self,forKey:.deleteToTrash)) ?? true
+        confirmDelete=(try? values.decode(Bool.self,forKey:.confirmDelete)) ?? true
+        refreshOnActivate=(try? values.decode(Bool.self,forKey:.refreshOnActivate)) ?? true
+        autoRefreshEnabled=(try? values.decode(Bool.self,forKey:.autoRefreshEnabled)) ?? false
+        autoRefreshMetadata=(try? values.decode(Bool.self,forKey:.autoRefreshMetadata)) ?? true
+        autoRefreshOnlyForeground=(try? values.decode(Bool.self,forKey:.autoRefreshOnlyForeground)) ?? true
+        autoRefreshExcludedPaths=(try? values.decode(String.self,forKey:.autoRefreshExcludedPaths)) ?? ""
+        autoRefreshUpdateHeader=(try? values.decode(Bool.self,forKey:.autoRefreshUpdateHeader)) ?? true
+        dateSeparator=(try? values.decode(String.self,forKey:.dateSeparator)) ?? ""
+        timeSeparator=(try? values.decode(String.self,forKey:.timeSeparator)) ?? ""
+        use12HourTime=(try? values.decode(Bool.self,forKey:.use12HourTime)) ?? false
+        zipCompressionLevel=(try? values.decode(Int.self,forKey:.zipCompressionLevel)) ?? 6
+        zipVerifyAfterPacking=(try? values.decode(Bool.self,forKey:.zipVerifyAfterPacking)) ?? true
+        archiveSetDateToNewest=(try? values.decode(Bool.self,forKey:.archiveSetDateToNewest)) ?? false
+        browseArchivesAsDirectories=(try? values.decode(Bool.self,forKey:.browseArchivesAsDirectories)) ?? true
+        ftpPassiveMode=(try? values.decode(Bool.self,forKey:.ftpPassiveMode)) ?? true
+        ftpConnectTimeout=(try? values.decode(Int.self,forKey:.ftpConnectTimeout)) ?? 15
+        ftpTransferTimeout=(try? values.decode(Int.self,forKey:.ftpTransferTimeout)) ?? 600
+        ftpOpenPanel=(try? values.decode(Int.self,forKey:.ftpOpenPanel)) ?? 0
     }
     func normalized()->CommanderConfiguration {
         var c=self
+        c.alternatingBackground=c.alternatingBackground.normalized
         func number(_ x:Double,_ range:ClosedRange<Double>,_ fallback:Double)->Double{x.isFinite ? min(range.upperBound,max(range.lowerBound,x)) : fallback}
         c.viewerFontSize=number(c.viewerFontSize,9...36,12);if c.viewerFontName.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty{c.viewerFontName="Menlo"}
         c.fileFontSize=number(c.fileFontSize,9...36,13);c.rowHeight=number(c.rowHeight,16...64,21)
@@ -144,6 +215,13 @@ struct CommanderConfiguration:Codable,Equatable {
         c.ignorePatterns=String(c.ignorePatterns.prefix(16384))
         c.fileFontName=c.fileFontName.trimmingCharacters(in:.whitespacesAndNewlines);c.viewerFontName=c.viewerFontName.trimmingCharacters(in:.whitespacesAndNewlines)
         c.externalEditorPath=c.externalEditorPath.trimmingCharacters(in:.whitespacesAndNewlines);c.externalViewerPath=c.externalViewerPath.trimmingCharacters(in:.whitespacesAndNewlines)
+        c.customShortcuts=String(c.customShortcuts.prefix(16384));c.commandAliases=String(c.commandAliases.prefix(16384))
+        c.copyBufferSizeKB=min(16384,max(64,c.copyBufferSizeKB))
+        if !["ask","skip","replace","rename"].contains(c.copyDefaultCollision){c.copyDefaultCollision="ask"}
+        c.zipCompressionLevel=min(9,max(0,c.zipCompressionLevel))
+        c.ftpConnectTimeout=min(300,max(1,c.ftpConnectTimeout));c.ftpTransferTimeout=min(86400,max(1,c.ftpTransferTimeout));c.ftpOpenPanel=min(3,max(0,c.ftpOpenPanel))
+        c.autoRefreshExcludedPaths=String(c.autoRefreshExcludedPaths.prefix(16384))
+        c.dateSeparator=String(c.dateSeparator.filter{!$0.isNewline}.prefix(3));c.timeSeparator=String(c.timeSeparator.filter{!$0.isNewline}.prefix(3))
         return c
     }
     static func load(defaults:UserDefaults = .standard)->CommanderConfiguration {
@@ -187,7 +265,7 @@ struct CommanderConfiguration:Codable,Equatable {
     }
     func footerSizeString(_ bytes:Int64,locale:Locale = .current)->String {var copy=self;if let footerSizeFormat{copy.sizeFormat=footerSizeFormat};return copy.sizeString(bytes,locale:locale)}
     func dateString(_ date:Date,locale:Locale = .current,timeZone:TimeZone = .current)->String {
-        ConfigurationFormatterCache.current.date(locale:locale,timeZone:timeZone,order:dateOrder,seconds:showSeconds,century:showCentury).string(from:date)
+        CommanderDateFormatting.string(date,configuration:self,locale:locale,timeZone:timeZone)
     }
 }
 
@@ -224,5 +302,60 @@ private final class ConfigurationFormatterCache:NSObject {
         }
         if dates.count>=32{dates.removeAll(keepingCapacity:true)}
         dates[key]=formatter;return formatter
+    }
+}
+
+
+/// Every user-supplied separator is quoted as a date-format literal, not parsed
+/// as an ICU pattern. Cache entries are thread-local and include every option.
+enum CommanderDateFormatting {
+    private final class Cache:NSObject {var values:[Key:DateFormatter]=[:]}
+    private struct Key:Hashable {
+        let locale:Locale,zone:TimeZone,order:CommanderConfiguration.DateOrder
+        let seconds:Bool,century:Bool,hour12:Bool,dateSeparator:String,timeSeparator:String
+    }
+    static func string(_ date:Date,configuration c:CommanderConfiguration,locale:Locale,timeZone:TimeZone)->String {
+        let key=Key(locale:locale,zone:timeZone,order:c.dateOrder,seconds:c.showSeconds,century:c.showCentury,hour12:c.use12HourTime,dateSeparator:c.dateSeparator,timeSeparator:c.timeSeparator)
+        let thread=Thread.current.threadDictionary,cache:Cache
+        if let existing=thread["local.totalcommander.date-settings"] as? Cache {cache=existing}
+        else {cache=Cache();thread["local.totalcommander.date-settings"]=cache}
+        if let formatter=cache.values[key] {return formatter.string(from:date)}
+        let formatter=DateFormatter();formatter.locale=locale;formatter.timeZone=timeZone
+        let year=c.showCentury ? "yyyy":"yy"
+        func literal(_ text:String)->String {text.components(separatedBy:"'").map{$0.isEmpty ? "" : "'"+$0+"'"}.joined(separator:"''")}
+        let defaultSeparator:String
+        let fields:[String]
+        switch c.dateOrder {
+        case .dayFirst:fields=["dd","MM",year];defaultSeparator="."
+        case .monthFirst:fields=["MM","dd",year];defaultSeparator="/"
+        case .yearFirst:fields=[year,"MM","dd"];defaultSeparator="-"
+        case .system:
+            formatter.dateStyle = .short;formatter.timeStyle = .none
+            let pattern=formatter.dateFormat ?? "M/d/yyyy"
+            let ordered=[("d","dd"),("M","MM"),("y",year)].compactMap { char,field -> (Int,String)? in
+                guard let range=pattern.range(of:char) else{return nil};return (pattern.distance(from:pattern.startIndex,to:range.lowerBound),field)
+            }.sorted{$0.0<$1.0}.map(\.1)
+            fields=ordered.count==3 ? ordered:["MM","dd",year];defaultSeparator="/"
+        }
+        let datePattern:String
+        if c.dateOrder == .system,c.dateSeparator.isEmpty {
+            formatter.dateStyle = .short;formatter.timeStyle = .none
+            datePattern=formatter.dateFormat.replacingOccurrences(of:"y+",with:year,options:.regularExpression)
+        } else {datePattern=fields.joined(separator:literal(c.dateSeparator.isEmpty ? defaultSeparator:c.dateSeparator))}
+        let timePattern:String
+        if c.dateOrder == .system,!c.use12HourTime,c.timeSeparator.isEmpty {
+            // Preserve the original locale-based system time when no override is requested.
+            formatter.dateStyle = .none;formatter.timeStyle=c.showSeconds ? .medium:.short
+            timePattern=formatter.dateFormat
+        } else {
+            let separator=literal(c.timeSeparator.isEmpty ? ":":c.timeSeparator)
+            timePattern=(c.use12HourTime ? "hh":"HH")+separator+"mm"+(c.showSeconds ? separator+"ss":"")+(c.use12HourTime ? " a":"")
+        }
+        if c.dateOrder == .system,c.dateSeparator.isEmpty,c.timeSeparator.isEmpty,!c.use12HourTime {
+            formatter.dateStyle = .short;formatter.timeStyle=c.showSeconds ? .medium:.short
+            formatter.dateFormat=formatter.dateFormat.replacingOccurrences(of:"y+",with:year,options:.regularExpression)
+        } else {formatter.dateFormat=datePattern+" "+timePattern}
+        if cache.values.count>=32 {cache.values.removeAll(keepingCapacity:true)}
+        cache.values[key]=formatter;return formatter.string(from:date)
     }
 }

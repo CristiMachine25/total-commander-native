@@ -21,11 +21,12 @@ enum ConfigurationFileError:LocalizedError {
 /// loads plugins, executes commands, or changes saved preferences.
 enum ConfigurationFiles {
     static let maximumBytes=1_048_576
+    static let version2Keys:Set<String> = ["tabsCloseOnDoubleClick","confirmCloseAllTabs","tabsShowLockAsterisk","customShortcuts","commandAliases","alternatingRowBackground","alternatingBackground","copyPreserveDirectoryDates","copyPreserveFileDates","copyPreservePermissions","copyVerifyAfterCopy","copyBufferSizeKB","copyDefaultCollision","confirmCopyMove","confirmOverwrite","deleteToTrash","confirmDelete","refreshOnActivate","autoRefreshEnabled","autoRefreshMetadata","autoRefreshOnlyForeground","autoRefreshExcludedPaths","autoRefreshUpdateHeader","dateSeparator","timeSeparator","use12HourTime","zipCompressionLevel","zipVerifyAfterPacking","archiveSetDateToNewest","browseArchivesAsDirectories","ftpPassiveMode","ftpConnectTimeout","ftpTransferTimeout","ftpOpenPanel"]
     static let format="total-commander-native-configuration"
     private struct Envelope:Codable {let format:String;let version:Int;let configuration:CommanderConfiguration}
     static func exportNative(_ configuration:CommanderConfiguration)throws->Data {
         let encoder=JSONEncoder();encoder.outputFormatting=[.prettyPrinted,.sortedKeys]
-        let result=try encoder.encode(Envelope(format:format,version:1,configuration:configuration.normalized()))
+        let result=try encoder.encode(Envelope(format:format,version:2,configuration:configuration.normalized()))
         guard result.count<=maximumBytes else {throw ConfigurationFileError.invalid("Configuration exceeds the 1 MiB limit.")}
         return result
     }
@@ -34,19 +35,25 @@ enum ConfigurationFiles {
         guard let object=try JSONSerialization.jsonObject(with:data) as? [String:Any],
               Set(object.keys)==Set(["format","version","configuration"]),
               object["format"] as? String == format,
-              let version=object["version"] as? NSNumber,CFGetTypeID(version) != CFBooleanGetTypeID(),version.doubleValue==1,
+              let version=object["version"] as? NSNumber,CFGetTypeID(version) != CFBooleanGetTypeID(),[1.0,2.0].contains(version.doubleValue),
               object["configuration"] is [String:Any] else {
-            throw ConfigurationFileError.invalid("Not a supported version 1 native configuration file.")
+            throw ConfigurationFileError.invalid("Not a supported native configuration file (version 1 or 2).")
         }
         try rejectDuplicateKeys(data)
         let envelope=try JSONDecoder().decode(Envelope.self,from:data)
         let normalized=envelope.configuration.normalized()
         // CommanderConfiguration's persistence decoder deliberately tolerates old/malformed
         // stored keys. File import must not silently replace bad input with those defaults.
-        let canonical=try JSONSerialization.jsonObject(with:exportNative(normalized))
+        var canonical=try JSONSerialization.jsonObject(with:exportNative(normalized)) as! [String:Any]
+        if envelope.version==1 {
+            var fields=canonical["configuration"] as! [String:Any]
+            for key in version2Keys {fields.removeValue(forKey:key)}
+            canonical["configuration"]=fields;canonical["version"]=1
+        }
         guard equalJSON(object,canonical) else {
             throw ConfigurationFileError.invalid("Configuration contains missing, unknown, invalid, or out-of-range settings. No settings were changed.")
         }
+        try ShortcutSettings.validate(shortcuts:normalized.customShortcuts,aliases:normalized.commandAliases)
         return normalized
     }
     private static func rejectDuplicateKeys(_ data:Data)throws {
@@ -140,6 +147,21 @@ enum ConfigurationFiles {
                     guard let value,styles.indices.contains(value) else{bad();continue}
                     if e.key=="sizestyle"{result.sizeFormat=styles[value]}else{result.footerSizeFormat=styles[value]};importedKey()
                 case "sizestyle1000":boolean(\.useDecimalUnits)
+                case "usetrash":boolean(\.deleteToTrash)
+                case "verifycopy":boolean(\.copyVerifyAfterCopy)
+                case "copydirtimestamp":boolean(\.copyPreserveDirectoryDates)
+                case "copyblocksize":
+                    guard let value,(64...16384).contains(value) else{bad();continue};result.copyBufferSizeKB=value;importedKey()
+                case "watchdirs":
+                    guard let value,value>=0 else{bad();continue}
+                    result.autoRefreshEnabled=value&1 != 0;result.autoRefreshMetadata=value&2 != 0;result.autoRefreshOnlyForeground=value&8 != 0;result.autoRefreshUpdateHeader=value&32 != 0;importedKey()
+                    if value & ~59 != 0{unsupported.append(e.label+": end-of-list insertion and diagnostic beep flags are unsupported")}
+                    if value&16==0{unsupported.append(e.label+": native footer always follows the refreshed list")}
+                case "customseparators":
+                    let characters=Array(e.value);guard characters.count==4 else{bad();continue}
+                    result.dateSeparator=characters[0]=="0" ? "" : String(characters[0]);result.timeSeparator=characters[1]=="0" ? "" : String(characters[1]);importedKey()
+                    if characters[2] != "0" || characters[3] != "0" {unsupported.append(e.label+": numeric separators continue to follow the macOS locale")}
+
                 case "showhiddensystem":
                     // macOS has hidden names but no Windows system-file attribute.
                     guard let value,[0,1,2].contains(value) else{bad();continue}
@@ -156,6 +178,13 @@ enum ConfigurationFiles {
                     if value & ~129 != 0{unsupported.append(e.label+": only always-visible and new-tab-position flags are supported")}
                 case "quicksearchmatchbeginning":boolean(\.quickSearchMatchBeginning)
                 case "quicksearchexactmatch":boolean(\.quickSearchMatchEnding)
+                default:unsupported.append(e.label)
+                }
+            } else if e.section=="packer" {
+                switch e.key {
+                case "internalziprate":guard let value,(0...9).contains(value) else{bad();continue};result.zipCompressionLevel=value;importedKey()
+                case "verifyzip":boolean(\.zipVerifyAfterPacking)
+                case "zipsetdatetonewest":boolean(\.archiveSetDateToNewest)
                 default:unsupported.append(e.label)
                 }
             } else if e.section=="allresolutions" {

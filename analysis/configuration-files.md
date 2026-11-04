@@ -1,6 +1,6 @@
 # Configuration file exchange
 
-Native version 1 JSON files export and restore the entire `CommanderConfiguration` schema. The envelope identifies `total-commander-native-configuration`, version 1, and a `configuration` object. Export uses atomic replacement. Import is data-only and returns a configuration without changing saved preferences. UI callers choose when to apply/save it.
+Native version 2 JSON files export and restore the entire `CommanderConfiguration` schema. The envelope identifies `total-commander-native-configuration`, version 2, and a `configuration` object. Export uses atomic replacement. Import is data-only and returns a configuration without changing saved preferences. UI callers choose when to apply/save it.
 
 Strict native import rejects unknown versions, missing/unknown settings, wrong field types, enum values, values that would be clamped or normalized, and duplicate JSON keys. The file must contain a complete exported configuration rather than a partial patch. This intentionally differs from the tolerant local-persistence migration decoder. Native exports include configured external application paths but never launch them during import.
 
@@ -34,3 +34,23 @@ Focused command:
 xcrun swiftc -swift-version 5 -framework AppKit Sources/ConfigurationModel.swift Sources/ConfigurationFiles.swift Tests/ConfigurationFilesTests.swift -o /tmp/tc-config-files-tests
 /tmp/tc-config-files-tests
 ```
+
+## Version 2 settings expansion
+
+Version 2 exports include all 86 typed settings. Complete version 1 exports remain accepted: the original keys are validated strictly, and the new settings receive migration defaults. Version 2 exports must include every new key; unknown fields and malformed shortcuts/aliases are rejected. The separate button-bar preference remains outside this schema.
+
+Additional supported INI keys, sourced from the extracted original help:
+
+| Section / key | Mapping and limits |
+|---|---|
+| Configuration / UseTrash | Local Trash preference; permanent deletion still confirms |
+| Configuration / VerifyCopy | Local staged-byte verification |
+| Configuration / CopyDirTimeStamp | New destination directory timestamps |
+| Configuration / CopyBlockSize | Native copy buffer in KiB, accepted 64–16384 |
+| Configuration / WatchDirs | Flags 1, 2, 8, 32 control monitoring, size/date, foreground-only, disk header; unsupported flags reported; native footer always follows its list |
+| Configuration / CustomSeparators | First two characters configure date/time; non-default numeric separator requests reported unsupported |
+| Packer / InternalZipRate | Compression 0–9 for newly packed ZIPs |
+| Packer / VerifyZIP | Post-pack integrity verification |
+| Packer / ZipSetDateToNewest | New ZIP timestamp from newest selected regular source |
+
+Evidence: `inisettings1.htm` CopyDirTimeStamp, CopyBlockSize, CustomSeparators; `inisettings2.htm` UseTrash, VerifyCopy, WatchDirs; `inisettings3.htm` [Packer] keys. Windows drive-letter exclusions, proxy profiles, passwords, plugin paths and unsupported overwrite-policy numeric mappings are not guessed.

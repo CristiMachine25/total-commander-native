@@ -15,8 +15,8 @@ import Darwin
         try rejects(Data(),"Empty rejected")
         try rejects(Data(repeating:65,count:ConfigurationFiles.maximumBytes+1),"Oversized rejected")
         try rejects(Data("not json".utf8),"Malformed rejected")
-        try rejects(Data(String(decoding:data,as:UTF8.self).replacingOccurrences(of:"\"version\" : 1",with:"\"version\" : 1, \"version\" : 1").utf8),"Duplicate JSON keys rejected")
-        try rejects(changed{$0["version"]=2},"Future version rejected")
+        try rejects(Data(String(decoding:data,as:UTF8.self).replacingOccurrences(of:"\"version\" : 2",with:"\"version\" : 2, \"version\" : 2").utf8),"Duplicate JSON keys rejected")
+        try rejects(changed{$0["version"]=3},"Future version rejected")
         try rejects(changed{$0["version"]=true},"Boolean version rejected")
         try rejects(changed{$0["format"]="other"},"Wrong format rejected")
         try rejects(changed{$0["extra"]=true},"Unknown envelope rejected")
@@ -97,6 +97,25 @@ import Darwin
         for rejected in [fifo,root,huge] {
             do{_=try ConfigurationFiles.readData(from:rejected);throw NSError(domain:"TestFailure",code:1)}catch let e as NSError{if e.domain=="TestFailure"{throw e};count+=1}
         }
+        var version1=object;version1["version"]=1
+        var legacyFields=version1["configuration"] as! [String:Any]
+        for key in ConfigurationFiles.version2Keys {legacyFields.removeValue(forKey:key)}
+        version1["configuration"]=legacyFields
+        let migrated=try ConfigurationFiles.importNative(JSONSerialization.data(withJSONObject:version1))
+        try check(migrated.sizeFormat == configuration.sizeFormat && migrated.copyVerifyAfterCopy==false && migrated.zipCompressionLevel==6,"Version 1 exports migrate with new defaults and retain existing fields")
+        version1["configuration"]=[:]
+        try rejects(JSONSerialization.data(withJSONObject:version1),"Version 1 still rejects missing original settings")
+        let extendedINI=Data("[Configuration]\nUseTrash=0\nVerifyCopy=1\nCopyDirTimeStamp=0\nCopyBlockSize=512\nWatchDirs=59\nCustomSeparators=-:00\n[Packer]\nInternalZipRate=9\nVerifyZIP=0\nZipSetDateToNewest=1\n".utf8)
+        let extended=try ConfigurationFiles.importINI(extendedINI,merging:CommanderConfiguration())
+        try check(!extended.configuration.deleteToTrash && extended.configuration.copyVerifyAfterCopy && !extended.configuration.copyPreserveDirectoryDates && extended.configuration.copyBufferSizeKB==512,"Original copy/delete INI keys map to working policies")
+        try check(extended.configuration.autoRefreshEnabled && extended.configuration.autoRefreshMetadata && extended.configuration.autoRefreshOnlyForeground && extended.configuration.autoRefreshUpdateHeader,"Supported WatchDirs flags map independently")
+        try check(extended.configuration.zipCompressionLevel==9 && !extended.configuration.zipVerifyAfterPacking && extended.configuration.archiveSetDateToNewest,"Original packer keys map to ZIP policy")
+        try check(extended.configuration.dateSeparator=="-" && extended.configuration.timeSeparator==":" && extended.invalid.isEmpty && extended.unsupported.isEmpty,"Custom date/time separators import without guessing numeric formatting")
+        var expanded=configuration;expanded.copyVerifyAfterCopy=true;expanded.copyDefaultCollision="rename";expanded.autoRefreshEnabled=true;expanded.ftpOpenPanel=3;expanded.zipCompressionLevel=0;expanded.customShortcuts="Ctrl+Shift+C=cm_CopyFullNamesToClip";expanded.commandAliases="full=cm_SrcLong"
+        try check(try ConfigurationFiles.importNative(ConfigurationFiles.exportNative(expanded))==expanded,"Expanded settings roundtrip strictly")
+        try rejects(changed{o in var fields=o["configuration"] as! [String:Any];fields["copyBufferSizeKB"]=1;o["configuration"]=fields},"Copy buffer bounds enforced on JSON import")
+        try rejects(changed{o in var fields=o["configuration"] as! [String:Any];fields["zipCompressionLevel"]=10;o["configuration"]=fields},"ZIP compression bounds enforced on import")
+        try rejects(changed{o in var fields=o["configuration"] as! [String:Any];fields["customShortcuts"]="bad-binding";o["configuration"]=fields},"Invalid hotkey syntax cannot enter through JSON")
         print("Configuration file tests passed: \(count) assertions")
     }
 }
