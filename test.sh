@@ -70,7 +70,15 @@ xcrun swiftc -swift-version 5 Sources/FileParts.swift Tests/FilePartsTests.swift
 xcrun swiftc -swift-version 5 -framework AppKit -framework ImageIO "${PROVIDER_SOURCES[@]}" Tests/ArchiveFormatsTests.swift -o "$TEST_WORK/archive-formats"
 "$TEST_WORK/archive-formats" "$PWD/Resources/7zz" "$PWD/Tests/Fixtures"
 xcrun swiftc -swift-version 5 -framework AppKit Sources/ConfigurationModel.swift Tests/ConfigurationTests.swift -o "$TEST_WORK/configuration"
+xcrun swiftc -swift-version 5 -framework AppKit Sources/ConfigurationModel.swift Tests/ConfigurationFormatterTests.swift -o "$TEST_WORK/configuration-formatters"
+"$TEST_WORK/configuration-formatters"
+xcrun swiftc -swift-version 5 -framework AppKit Sources/ConfigurationModel.swift Sources/ConfigurationFiles.swift Tests/ConfigurationFilesTests.swift -o "$TEST_WORK/configuration-files"
+"$TEST_WORK/configuration-files"
 "$TEST_WORK/configuration"
+xcrun swiftc -swift-version 5 -framework AppKit Sources/ConfigurationModel.swift Tests/ConfigurationFormatterTests.swift -o "$TEST_WORK/configuration-formatters"
+"$TEST_WORK/configuration-formatters"
+xcrun swiftc -swift-version 5 -framework AppKit Sources/ConfigurationModel.swift Sources/ConfigurationFiles.swift Tests/ConfigurationFilesTests.swift -o "$TEST_WORK/configuration-files"
+"$TEST_WORK/configuration-files"
 xcrun swiftc -swift-version 5 -framework AppKit Sources/ConfigurationModel.swift Sources/Preferences.swift Tests/ConfigurationUITests.swift -o "$TEST_WORK/configuration-ui"
 "$TEST_WORK/configuration-ui"
 xcrun swiftc -swift-version 5 -D THUMBNAIL_TEST -framework AppKit -framework ImageIO Sources/Lister.swift Sources/ThumbnailView.swift Tests/ThumbnailTests.swift -o "$TEST_WORK/thumbnails"
@@ -86,6 +94,10 @@ for SOURCE_FILE in Sources/*.swift; do
     if [[ "$SOURCE_FILE" != "Sources/Main.swift" ]]; then PANE_SOURCES+=("$SOURCE_FILE"); fi
 done
 xcrun swiftc -swift-version 5 -framework AppKit -framework ImageIO "${PANE_SOURCES[@]}" "$TEST_WORK/MainWithoutEntry.swift" Tests/PaneViewTests.swift -o "$TEST_WORK/pane-views"
+xcrun swiftc -swift-version 5 -framework AppKit -framework ImageIO "${PANE_SOURCES[@]}" "$TEST_WORK/MainWithoutEntry.swift" Tests/PanePerformanceTests.swift -o "$TEST_WORK/pane-performance"
+"$TEST_WORK/pane-performance"
 "$TEST_WORK/pane-views"
+xcrun swiftc -swift-version 5 -framework AppKit -framework ImageIO "${PANE_SOURCES[@]}" "$TEST_WORK/MainWithoutEntry.swift" Tests/PanePerformanceTests.swift -o "$TEST_WORK/pane-performance"
+"$TEST_WORK/pane-performance"
 "${FTP_TEST_PYTHON:-python3}" Tests/ProviderIntegration.py "$TEST_WORK/ui" "$PWD/Resources/7zz"
 printf '%s\n' 'All native backend and provider integration suites passed.'
