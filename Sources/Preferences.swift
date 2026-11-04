@@ -36,6 +36,7 @@ private struct ConfigurationPage {
 final class PreferencesController:NSWindowController,NSWindowDelegate,NSTableViewDataSource,NSTableViewDelegate {
     private weak var commander:CommanderController?
     private var draft:CommanderConfiguration
+    private var baseline:CommanderConfiguration
     private let categories=NSTableView(),page=NSStackView(),scroller=NSScrollView()
     private let heading=NSTextField(labelWithString:""),note=NSTextField(wrappingLabelWithString:"")
     private var readers:[()throws->Void]=[]
@@ -43,7 +44,7 @@ final class PreferencesController:NSWindowController,NSWindowDelegate,NSTableVie
     private var cachedPages:[Int:CachedPage]=[:]
     private var currentPage=0,changingSelection=false
     init(_ commander:CommanderController) {
-        self.commander=commander;draft=commander.runtimeConfig;draft.showHidden=commander.showHidden
+        self.commander=commander;baseline=commander.runtimeConfig;draft=commander.runtimeConfig;draft.showHidden=commander.showHidden
         let window=NSWindow(contentRect:NSRect(x:0,y:0,width:920,height:650),styleMask:[.titled,.closable,.resizable],backing:.buffered,defer:false)
         window.title="Configuration";window.isReleasedWhenClosed=false;window.minSize=NSSize(width:820,height:540);window.appearance=NSAppearance(named:.aqua)
         super.init(window:window);window.delegate=self
@@ -163,8 +164,11 @@ final class PreferencesController:NSWindowController,NSWindowDelegate,NSTableVie
         showPage(currentPage)
     }
     @objc private func dismiss(){close()}
-    private func save()->Bool{
-        do {
+    /// Shared by the buttons and nonmodal regression tests. A second settings
+    /// editor must not overwrite changes applied since this dialog was opened.
+    func applyDraft()throws {
+            guard let commander else{throw failure("The file-manager window is no longer available.")}
+            guard commander.runtimeConfig==baseline else{throw failure("Settings changed while this dialog was open. Close and reopen it to avoid overwriting newer changes.")}
             try collect();draft=draft.normalized()
             for (enabled,path,title) in [(draft.externalViewerEnabled,draft.externalViewerPath,"Viewer"),(draft.externalEditorEnabled,draft.externalEditorPath,"Editor")] where enabled {
                 var directory:ObjCBool=false
@@ -172,8 +176,10 @@ final class PreferencesController:NSWindowController,NSWindowDelegate,NSTableVie
             }
             guard draft.fileFontName == "Tahoma" || NSFont(name:draft.fileFontName,size:draft.fileFontSize) != nil else{throw failure("The file list font is not installed. Enter its macOS font name.")}
             guard NSFont(name:draft.viewerFontName,size:draft.viewerFontSize) != nil else{throw failure("The internal viewer font is not installed.")}
-            if commander?.remember != false {try draft.save()};commander?.applyConfiguration(draft);return true
-        }catch{show(error);return false}
+            if commander.remember {try draft.save()};commander.applyConfiguration(draft);baseline=commander.runtimeConfig
+    }
+    private func save()->Bool {
+        do {try applyDraft();return true}catch{show(error);return false}
     }
     @objc private func applyWithoutClosing(){if save(){showPage(currentPage)}}
     @objc private func apply(){if save(){close()}}

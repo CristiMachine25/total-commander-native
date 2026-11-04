@@ -61,6 +61,19 @@ final class CommanderController:NSObject {
         let resetSize=descendants(resetWindow.contentView!).compactMap{$0 as? NSPopUpButton}.first{$0.itemTitles.contains("Fixed MB (native addition)")}!
         try check(resetSize.titleOfSelectedItem=="bytes","Restore defaults discards previously cached category values")
         resetController.close()
+        let concurrent=PreferencesController(commander)
+        let beforeApplyCount=commander.applied
+        try concurrent.applyDraft()
+        try concurrent.applyDraft()
+        try check(commander.applied==beforeApplyCount+2,"Successful Apply advances the baseline and permits another Apply")
+        commander.runtimeConfig.sizeFormat = .gigabytes
+        let newer=commander.runtimeConfig,storedBeforeStale=UserDefaults.standard.data(forKey:CommanderConfiguration.defaultsKey)
+        var staleRejected=false
+        do {try concurrent.applyDraft()}catch{staleRejected=error.localizedDescription.contains("Settings changed")}
+        try check(staleRejected,"A stale preferences dialog rejects Apply without presenting a blocking modal in this test")
+        try check(commander.runtimeConfig==newer && commander.applied==beforeApplyCount+2,"Stale Apply preserves newer settings and does not invoke runtime application")
+        try check(UserDefaults.standard.data(forKey:CommanderConfiguration.defaultsKey)==storedBeforeStale,"Stale Apply does not persist settings")
+        concurrent.close()
         print("PASS: \(checks) configuration UI assertions")
     }
 }
