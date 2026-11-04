@@ -1,0 +1,2 @@
+PASS: 46 transfer assertions
+PASS: 42 filesystem checks; temporary fixtures cleaned on exit. Trash was not exercised.

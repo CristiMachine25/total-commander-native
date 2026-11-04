@@ -122,6 +122,18 @@ enum FileService {
         catch { throw FileServiceError.operationFailed(completed: 0, item: name, reason: error.localizedDescription) }
     }
 
+    /// The UI must obtain explicit confirmation before calling this method.
+    /// FileManager removes a symbolic link itself, never its destination.
+    static func deletePermanently(_ sources:[URL]) throws {
+        for source in sources {
+            guard source.isFileURL,source.standardizedFileURL.path != "/",exists(source) else {throw FileServiceError.invalid("Invalid deletion source: \(source.path)")}
+        }
+        for (index,source) in sources.enumerated() {
+            do {try fm.removeItem(at:source)}
+            catch {throw FileServiceError.operationFailed(completed:index,item:source.lastPathComponent,reason:error.localizedDescription)}
+        }
+    }
+
     static func trash(_ sources: [URL]) throws {
         for source in sources {
             guard source.isFileURL, exists(source) else { throw FileServiceError.invalid("Source does not exist: \(source.path)") }

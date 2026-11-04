@@ -4,6 +4,14 @@ import Darwin
 enum TransferCollisionPolicy: String, CaseIterable {
     case ask = "Ask", skip = "Skip existing", replace = "Replace existing", rename = "Keep both", cancel = "Cancel job"
 }
+struct NativeTransferOptions: Equatable {
+    var preserveDirectoryDates = true
+    var preserveFileDates = true
+    var preservePermissions = true
+    var verifyAfterCopy = false
+    var bufferSizeKB = 1024
+    var bufferSize: Int { min(16384,max(64,bufferSizeKB)) * 1024 }
+}
 struct TransferConflict { let source: URL; let destination: URL }
 struct TransferProgress {
     let id: UUID
@@ -47,15 +55,17 @@ final class NativeTransferEngine {
     private var progress: TransferProgress
     private var warnings: [String] = []
     private let move: Bool
+    private let options: NativeTransferOptions
     private var lastUpdate = Date.distantPast
     private var destinationDirectories: [String: stat] = [:]
     private var destinationIsCanonical = false
 
     init(id: UUID = UUID(), move: Bool, policy: TransferCollisionPolicy,
+         options: NativeTransferOptions = NativeTransferOptions(),
          cancellation: TransferCancellation = TransferCancellation(),
          resolve: ((TransferConflict) -> TransferCollisionPolicy)? = nil,
          update: @escaping (TransferProgress) -> Void = { _ in }) {
-        self.move = move; self.policy = policy; self.cancellation = cancellation; self.resolve = resolve; self.update = update
+        self.options = options; self.move = move; self.policy = policy; self.cancellation = cancellation; self.resolve = resolve; self.update = update
         progress = TransferProgress(id:id,state:"Preparing",currentPath:"",copiedBytes:0,totalBytes:0,completedItems:0,skippedItems:0)
     }
     private func checkCancellation() throws { if cancellation.isCancelled { throw TransferError.cancelled } }
@@ -217,7 +227,7 @@ final class NativeTransferEngine {
                 do {
                     // A replacement directory is copied first; moving sources
                     // during staging would make a cancelled job lose its source.
-                    let copyEngine = NativeTransferEngine(move:false,policy:.replace,cancellation:cancellation,update:{ _ in })
+                    let copyEngine = NativeTransferEngine(move:false,policy:.replace,options:options,cancellation:cancellation,update:{ _ in })
                     let stageFD = try destinationParent(stage.appendingPathComponent(".identity-check")); close(stageFD)
                     copyEngine.destinationDirectories = destinationDirectories
                     copyEngine.destinationIsCanonical = true
@@ -227,6 +237,8 @@ final class NativeTransferEngine {
                         guard result.errors.isEmpty, !result.cancelled else { if result.cancelled { throw TransferError.cancelled }; throw TransferError.message(result.summary) }
                         progress.copiedBytes += result.progress.copiedBytes
                     }
+                    let metadataFD = try destinationParent(stage.appendingPathComponent(".identity-check"))
+                    applyDirectoryMetadata(original,fd:metadataFD,path:stage.path);close(metadataFD)
                     try checkCancellation(); try commit(stage:stage,target:target,expected:collision,parentFD:parentFD)
                     if move { try removeSnapshot(snapshot) }
                     progress.completedItems += 1; emit(force:true); return true
@@ -281,12 +293,8 @@ final class NativeTransferEngine {
         }
         try checkCancellation()
         if created {
-            do {
-                try revalidateParent(target.appendingPathComponent(".identity-check"), fd:directoryFD)
-                var times = [original.st_atimespec, original.st_mtimespec]
-                guard fchmod(directoryFD,original.st_mode & 0o7777) == 0, futimens(directoryFD,&times) == 0 else { throw TransferError.message("Folder metadata update failed.") }
-            }
-            catch { warnings.append("Folder metadata was not fully preserved: \(target.path)") }
+            try revalidateParent(target.appendingPathComponent(".identity-check"), fd:directoryFD)
+            applyDirectoryMetadata(original,fd:directoryFD,path:target.path)
         }
         if move && allMoved {
             // rmdir refuses newly arrived/unprocessed contents instead of removing
@@ -294,6 +302,37 @@ final class NativeTransferEngine {
             guard rmdir(source.path) == 0 else { throw TransferError.message("Transferred contents, but source folder remains: \(source.path) (\(String(cString:strerror(errno))))") }
         }
         progress.completedItems += 1; emit(force:true); return allMoved
+    }
+    private func applyDirectoryMetadata(_ original:stat,fd:Int32,path:String) {
+        if options.preservePermissions,fchmod(fd,original.st_mode & 0o7777) != 0 {warnings.append("Folder permissions were not preserved: "+path)}
+        if options.preserveDirectoryDates {
+            var times=[original.st_atimespec,original.st_mtimespec]
+            if futimens(fd,&times) != 0 {warnings.append("Folder timestamps were not preserved: "+path)}
+        }
+    }
+    private func verifyContents(input:Int32,output:Int32,size:off_t)throws {
+        progress.state="Verifying";emit(force:true)
+        defer {progress.state=move ? "Moving" : "Copying";emit(force:true)}
+        var original=[UInt8](repeating:0,count:options.bufferSize),copied=original
+        var offset:off_t=0
+        func readChunk(_ fd:Int32,_ bytes:inout [UInt8],_ count:Int,_ offset:off_t)throws->Int {
+            var total=0
+            while total<count {
+                try checkCancellation()
+                let amount=bytes.withUnsafeMutableBytes {pread(fd,$0.baseAddress!.advanced(by:total),count-total,offset+off_t(total))}
+                if amount<0 {if errno==EINTR{continue};throw TransferError.message("Could not read data for copy verification.")}
+                if amount==0{break};total += amount
+            }
+            return total
+        }
+        while offset<size {
+            try checkCancellation();let count=Int(min(off_t(original.count),size-offset))
+            let left=try readChunk(input,&original,count,offset),right=try readChunk(output,&copied,count,offset)
+            guard left==count,right==count,original.prefix(count).elementsEqual(copied.prefix(count)) else {throw TransferError.message("Copy verification failed; destination was not committed and source was retained.")}
+            offset += off_t(count)
+        }
+        var copiedStat=stat()
+        guard fstat(output,&copiedStat)==0,copiedStat.st_size==size else{throw TransferError.message("Copy verification found a different destination size; source retained.")}
     }
     private func copyRegular(_ source: URL, target: URL, original: stat, expected: stat?, parentFD: Int32) throws {
         let input = Darwin.open(source.path,O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC)
@@ -303,10 +342,10 @@ final class NativeTransferEngine {
         guard fstat(input,&opened) == 0, opened.st_mode & S_IFMT == S_IFREG, sameIdentity(original,opened) else { throw TransferError.message("Source changed before reading: \(source.path)") }
         let stage = target.deletingLastPathComponent().appendingPathComponent(".transfer-" + UUID().uuidString)
         try revalidateParent(target, fd:parentFD)
-        let output = openat(parentFD,stage.lastPathComponent,O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC,0o600)
+        let output = openat(parentFD,stage.lastPathComponent,O_RDWR | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC,0o600)
         guard output >= 0 else { throw TransferError.message("Cannot create staged destination: \(String(cString:strerror(errno)))") }
         defer { Darwin.close(output); try? removeAt(parentFD,stage.lastPathComponent) }
-        var buffer = [UInt8](repeating:0,count:1_048_576)
+        var buffer = [UInt8](repeating:0,count:options.bufferSize)
         while true {
             try checkCancellation()
             let amount = Darwin.read(input,&buffer,buffer.count)
@@ -323,8 +362,22 @@ final class NativeTransferEngine {
         }
         var after = stat()
         guard fstat(input,&after) == 0, unchanged(opened,after) else { throw TransferError.message("Source changed while being copied; destination was not committed: \(source.path)") }
-        if fcopyfile(input,output,nil,copyfile_flags_t(COPYFILE_METADATA)) != 0 { warnings.append("Metadata was not fully preserved: \(source.path)") }
+        // Keep extended attributes regardless of POSIX permission/date choices. The
+        // legacy all-metadata path preserves the existing default copy behavior.
+        var metadataFlags=copyfile_flags_t(COPYFILE_XATTR)
+        if options.preservePermissions {metadataFlags |= copyfile_flags_t(COPYFILE_ACL)}
+        if options.preservePermissions && options.preserveFileDates {metadataFlags |= copyfile_flags_t(COPYFILE_STAT)}
+        if fcopyfile(input,output,nil,metadataFlags) != 0 {warnings.append("Metadata was not fully preserved: \(source.path)")}
+        if options.preservePermissions && !options.preserveFileDates, fchmod(output,opened.st_mode & 0o7777) != 0 {warnings.append("Permissions were not preserved: \(source.path)")}
+        if options.preserveFileDates && !options.preservePermissions {
+            var times=[opened.st_atimespec,opened.st_mtimespec]
+            if futimens(output,&times) != 0 {warnings.append("Timestamps were not preserved: \(source.path)")}
+        }
         guard fsync(output) == 0 else { throw TransferError.message("Could not flush staged data: \(String(cString:strerror(errno)))") }
+        if options.verifyAfterCopy {
+            try verifyContents(input:input,output:output,size:opened.st_size)
+            guard fstat(input,&after)==0,unchanged(opened,after) else {throw TransferError.message("Source changed during verification; source and old destination retained.")}
+        }
         try checkCancellation(); try commit(stage:stage,target:target,expected:expected,parentFD:parentFD)
         if move {
             guard unchanged(opened,try info(source)) else { throw TransferError.message("Copied, but source changed and was retained: \(source.path)") }
@@ -364,6 +417,7 @@ final class NativeTransferQueue {
     var hasPendingJobs: Bool { lock.lock(); defer { lock.unlock() }; return !cancellations.isEmpty }
     @discardableResult func enqueue(sources: [URL], destination: URL, move: Bool,
                                    policy: TransferCollisionPolicy = .ask,
+                                   options: NativeTransferOptions = NativeTransferOptions(),
                                    resolve: ((TransferConflict) -> TransferCollisionPolicy)? = nil,
                                    callbackQueue: DispatchQueue = .main,
                                    onUpdate: @escaping (TransferProgress) -> Void = { _ in },
@@ -373,7 +427,7 @@ final class NativeTransferQueue {
         let initial = TransferProgress(id:id,state:"Queued",currentPath:destination.path,copiedBytes:0,totalBytes:0,completedItems:0,skippedItems:0)
         callbackQueue.async { onUpdate(initial) }
         worker.async { [self] in
-            let engine = NativeTransferEngine(id:id,move:move,policy:policy,cancellation:cancellation,resolve:resolve,update: { value in callbackQueue.async { onUpdate(value) } })
+            let engine = NativeTransferEngine(id:id,move:move,policy:policy,options:options,cancellation:cancellation,resolve:resolve,update: { value in callbackQueue.async { onUpdate(value) } })
             let result = engine.run(sources:sources,destination:destination)
             lock.lock(); cancellations.removeValue(forKey:id); lock.unlock()
             callbackQueue.async { completion(result) }
@@ -397,6 +451,10 @@ final class TransferQueueController: NSWindowController, NSWindowDelegate {
     /// May be called from the app after its destination confirmation. The policy
     /// chooser and conflicts run on the main thread; data movement stays serial.
     static func enqueue(sources: [URL], destination: URL, move: Bool,
+                        options: NativeTransferOptions = NativeTransferOptions(),
+                        defaultPolicy: TransferCollisionPolicy = .ask,
+                        confirmPolicy: Bool = true,
+                        confirmOverwrite: Bool = true,
                         completion: @escaping (TransferResult) -> Void = { _ in }) {
         let controller = shared
         let alert = NSAlert()
@@ -404,12 +462,21 @@ final class TransferQueueController: NSWindowController, NSWindowDelegate {
         alert.informativeText = "\(sources.count) selected item(s) → \(destination.path)\nExisting folders merge; this policy applies to conflicting files or item types."
         let policy = NSPopUpButton(frame:NSRect(x:0,y:0,width:300,height:28))
         let choices: [TransferCollisionPolicy] = [.ask,.skip,.replace,.rename]
-        policy.addItems(withTitles:choices.map(\.rawValue)); alert.accessoryView = policy
+        policy.addItems(withTitles:choices.map(\.rawValue))
+        policy.selectItem(at:choices.firstIndex(of:defaultPolicy) ?? 0)
+        let verify=NSButton(checkboxWithTitle:"Verify copied files by reading them back",target:nil,action:nil)
+        verify.state=options.verifyAfterCopy ? .on : .off
+        let accessory=NSStackView(views:[policy,verify]);accessory.orientation = .vertical;accessory.alignment = .leading;accessory.spacing=10;accessory.frame=NSRect(x:0,y:0,width:360,height:65)
+        alert.accessoryView=accessory
         alert.addButton(withTitle:"Add to queue"); alert.addButton(withTitle:"Cancel")
-        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        if confirmPolicy {guard alert.runModal() == .alertFirstButtonReturn else { return }}
         controller.showWindow(nil); controller.window?.makeKeyAndOrderFront(nil)
         var rememberedChoice: TransferCollisionPolicy?
-        let id = NativeTransferQueue.shared.enqueue(sources:sources,destination:destination,move:move,policy:choices[policy.indexOfSelectedItem],resolve:{ conflict in
+        var operationOptions=options;operationOptions.verifyAfterCopy=verify.state == .on
+        var selectedPolicy=choices[policy.indexOfSelectedItem]
+        if selectedPolicy == .ask && !confirmOverwrite {selectedPolicy = .replace}
+        if selectedPolicy == .replace && confirmOverwrite {selectedPolicy = .ask}
+        let id = NativeTransferQueue.shared.enqueue(sources:sources,destination:destination,move:move,policy:selectedPolicy,options:operationOptions,resolve:{ conflict in
             if let rememberedChoice { return rememberedChoice }
             var decision = TransferCollisionPolicy.cancel
             DispatchQueue.main.sync {

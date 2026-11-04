@@ -155,6 +155,47 @@ import Darwin
             try! fm.removeItem(at:fifoSwap);precondition(mkfifo(fifoSwap.path,0o600)==0);return .replace
         }).run(sources:[fifoSwap],destination:destination)
         try check(!result.errors.isEmpty && read(fifoTarget)=="original","Source changed to FIFO in conflict prompt is rejected without blocking or replacing destination")
+        // Copy settings operate on private staged data and cannot bypass safe commit.
+        let settingsSource=try directory("settings-source"),settingsDest=try directory("settings-dest")
+        let settingsFile=settingsSource.appendingPathComponent("configured")
+        try write("verified contents",settingsFile)
+        let oldDate=Date(timeIntervalSince1970:946684800)
+        try fm.setAttributes([.modificationDate:oldDate,.posixPermissions:0o751],ofItemAtPath:settingsFile.path)
+        var options=NativeTransferOptions();options.verifyAfterCopy=true;options.bufferSizeKB=64
+        var verificationObserved=false
+        result=NativeTransferEngine(move:false,policy:.replace,options:options,update:{if $0.state=="Verifying"{verificationObserved=true}}).run(sources:[settingsFile],destination:settingsDest)
+        let settingsTarget=settingsDest.appendingPathComponent("configured")
+        let attrs=try fm.attributesOfItem(atPath:settingsTarget.path)
+        try check(result.errors.isEmpty && verificationObserved && read(settingsTarget)=="verified contents","Verification reads the staged copy and commits matching bytes")
+        try check((attrs[.posixPermissions] as? NSNumber)?.intValue==0o751,"Preserve permissions retains source mode")
+        try check(abs((attrs[.modificationDate] as! Date).timeIntervalSince(oldDate))<1,"Preserve file dates retains modification date")
+        options.preserveFileDates=false;options.preservePermissions=false
+        result=NativeTransferEngine(move:false,policy:.replace,options:options).run(sources:[settingsFile],destination:settingsDest)
+        let fresh=try fm.attributesOfItem(atPath:settingsTarget.path)
+        try check(result.errors.isEmpty && (fresh[.modificationDate] as! Date).timeIntervalSince(oldDate)>60,"Disabled file dates gives the copied file a new modification date")
+        try check((fresh[.posixPermissions] as? NSNumber)?.intValue==0o600,"Disabled permissions retains private new-file mode instead of source executable bits")
+        let datedFolder=settingsSource.appendingPathComponent("dated");try fm.createDirectory(at:datedFolder,withIntermediateDirectories:false)
+        try write("child",datedFolder.appendingPathComponent("child"));try fm.setAttributes([.modificationDate:oldDate],ofItemAtPath:datedFolder.path)
+        result=NativeTransferEngine(move:false,policy:.replace,options:NativeTransferOptions()).run(sources:[datedFolder],destination:settingsDest)
+        try check(result.errors.isEmpty && abs((try fm.attributesOfItem(atPath:settingsDest.appendingPathComponent("dated").path)[.modificationDate] as! Date).timeIntervalSince(oldDate))<1,"New directory timestamps preserved by default")
+        let noDates=try directory("no-directory-dates");options.preserveDirectoryDates=false
+        result=NativeTransferEngine(move:false,policy:.replace,options:options).run(sources:[datedFolder],destination:noDates)
+        try check(result.errors.isEmpty && (try fm.attributesOfItem(atPath:noDates.appendingPathComponent("dated").path)[.modificationDate] as! Date).timeIntervalSince(oldDate)>60,"Directory timestamp option is effective")
+        try write("old destination",settingsTarget)
+        var corrupted=false
+        result=NativeTransferEngine(move:true,policy:.replace,options:options,update:{value in
+            if value.state=="Verifying",!corrupted {
+                corrupted=true
+                let stage=try! fm.contentsOfDirectory(at:settingsDest,includingPropertiesForKeys:nil).first{$0.lastPathComponent.hasPrefix(".transfer-")}!
+                try! write("corrupted",stage)
+            }
+        }).run(sources:[settingsFile],destination:settingsDest)
+        try check(corrupted && !result.errors.isEmpty && read(settingsTarget)=="old destination" && read(settingsFile)=="verified contents","Verification failure preserves source and old destination on move")
+        try check(try fm.contentsOfDirectory(at:settingsDest,includingPropertiesForKeys:nil).allSatisfy{!$0.lastPathComponent.hasPrefix(".transfer-")},"Failed verification cleans private staged file")
+        let cancelVerify=TransferCancellation()
+        result=NativeTransferEngine(move:true,policy:.replace,options:options,cancellation:cancelVerify,update:{if $0.state=="Verifying"{cancelVerify.cancel()}}).run(sources:[settingsFile],destination:settingsDest)
+        try check(result.cancelled && read(settingsFile)=="verified contents" && read(settingsTarget)=="old destination","Cancel verification retains source and existing destination")
+        try check(NativeTransferOptions(bufferSizeKB:1).bufferSize==65536 && NativeTransferOptions(bufferSizeKB:Int.max).bufferSize==16777216,"Transfer buffer clamps safely before allocation")
         print("PASS: \(count) transfer assertions")
     }
 }

@@ -23,6 +23,13 @@ import AppKit
         try rejects("MLSD traversal") { _ = try FTPClient.parseMLSD(Data("type=file; ../x\r\n".utf8)) }
         try rejects("MLSD duplicate") { _ = try FTPClient.parseMLSD(Data("type=file; a\r\ntype=file; a\r\n".utf8)) }
         try check(FTPClient.processArguments == ["--disable", "--config", "-"], "credential-free process arguments")
+        let defaults=FTPConnectionOptions()
+        try check(defaults.curlLines(listing:false)==["connect-timeout = 15","max-time = 600","ftp-pasv"],"FTP defaults preserve passive transfer behavior")
+        let custom=FTPConnectionOptions(passiveMode:false,connectTimeout:7,transferTimeout:45)
+        try check(custom.curlLines(listing:true)==["connect-timeout = 7","max-time = 45","ftp-port = \"-\""],"Active mode and custom timeouts reach curl")
+        try check(defaults.curlLines(listing:true).contains("max-time = 120"),"Directory listing retains bounded timeout")
+        try rejects("Invalid connect timeout rejected"){_=try FTPClient(profile:p,password:"",options:.init(connectTimeout:0))}
+        try rejects("Invalid transfer timeout rejected"){_=try FTPClient(profile:p,password:"",options:.init(transferTimeout:86401))}
         let store = FTPProfileStore(file: root.appendingPathComponent("profiles.json")); try store.save([p])
         try check(try store.load() == [p], "profile roundtrip")
         try check(!String(data: try Data(contentsOf: store.file), encoding: .utf8)!.contains("password"), "no stored passwords")
@@ -50,6 +57,11 @@ import AppKit
         p.port = Int(try String(contentsOf: ready, encoding: .utf8))!
         let client = try FTPClient(profile: p, password: "temporary-secret")
         try check(try client.list(path: "/").map(\.name) == ["spaces ü %#.bin"], "real FTP list")
+        let activeClient=try FTPClient(profile:p,password:"temporary-secret",options:custom)
+        try check(try activeClient.list(path:"/").map(\.name)==["spaces ü %#.bin"],"Real FTP active-mode listing with custom connection options")
+        let activeDownload=root.appendingPathComponent("active-download.bin")
+        try activeClient.download(remotePath:"/spaces ü %#.bin",to:activeDownload)
+        try check(try Data(contentsOf:activeDownload)==original,"Real FTP active-mode binary download")
         let local = root.appendingPathComponent("download.bin")
         try client.download(remotePath: "/spaces ü %#.bin", to: local)
         try check(try Data(contentsOf: local) == original, "binary download and URL encoding")

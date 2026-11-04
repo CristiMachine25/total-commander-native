@@ -251,26 +251,38 @@ enum NativeOperations {
             throw fail("Archive tool failed (\(process.terminationStatus)).\n" + String(output.suffix(4000)))
         }
     }
-    static func pack(sources: [URL], archive: URL, tool: URL) throws {
+    struct ZIPOptions: Equatable {
+        var compressionLevel = 6
+        var verifyAfterPacking = true
+        var setDateToNewest = false
+    }
+    static func pack(sources: [URL], archive: URL, tool: URL, options: ZIPOptions = ZIPOptions()) throws {
+        guard (0...9).contains(options.compressionLevel) else {throw fail("ZIP compression must be between 0 (store) and 9 (maximum).")}
         guard let first = sources.first else { throw fail("Select files to pack.") }
         let parent = canonical(first.deletingLastPathComponent())
         guard sources.allSatisfy({ canonical($0.deletingLastPathComponent()).path == parent.path }) else { throw fail("Packing currently requires items from one folder.") }
         guard !exists(archive) else { throw fail("Archive already exists: \(archive.path)") }
         try ordinaryDirectory(archive.deletingLastPathComponent())
+        var newestFileDate:Date?
+        func recordDate(_ date:Date?) {if let date {newestFileDate=max(newestFileDate ?? date,date)}}
         for source in sources {
             let attributes = try fm.attributesOfItem(atPath: source.path)
             let type = attributes[.type] as? FileAttributeType
             guard type == .typeRegular || type == .typeDirectory else { throw fail("Packing symbolic links and special files is unsupported.") }
             guard !archive.standardizedFileURL.path.hasPrefix(source.standardizedFileURL.path + "/") else { throw fail("Do not create an archive inside a selected folder.") }
+            if type == .typeRegular {recordDate(attributes[.modificationDate] as? Date)}
             if type == .typeDirectory {
                 let entries = try manifest(source, cancelled: { false })
                 guard entries.values.allSatisfy({ $0.type == .typeRegular || $0.type == .typeDirectory }) else { throw fail("Selected folder contains links or special files; packing was not started.") }
+                for entry in entries.values where entry.type == .typeRegular {recordDate(entry.modified)}
             }
         }
         let temporary = archive.deletingLastPathComponent().appendingPathComponent(".archive-" + UUID().uuidString + ".zip")
         defer { try? fm.removeItem(at: temporary) }
-        try runTool(tool, arguments: ["a", "-tzip", "-mx=5", temporary.path, "--"] + sources.map(\.lastPathComponent), directory: parent)
+        try runTool(tool, arguments: ["a", "-tzip", "-mx=\(options.compressionLevel)", temporary.path, "--"] + sources.map(\.lastPathComponent), directory: parent)
         _ = try listArchive(archive: temporary, tool: tool)
+        if options.verifyAfterPacking {try runTool(tool,arguments:["t","-tzip", "--",temporary.path],directory:parent)}
+        if options.setDateToNewest,let newestFileDate {try fm.setAttributes([.modificationDate:newestFileDate],ofItemAtPath:temporary.path)}
         guard !exists(archive) else { throw fail("Destination appeared while packing; archive was not replaced.") }
         try fm.moveItem(at: temporary, to: archive)
     }

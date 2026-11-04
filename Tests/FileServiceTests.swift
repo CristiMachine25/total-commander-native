@@ -72,6 +72,19 @@ struct FileServiceTests {
         try FileService.transfer([renamed], to: dest, move: true)
         try check(!fm.fileExists(atPath: renamed.path), "Move removes source")
         try check(try Data(contentsOf: dest.appendingPathComponent(renamed.lastPathComponent)) == payload, "Move preserves content")
+        let removeRoot=root.appendingPathComponent("delete-fixture")
+        try fm.createDirectory(at:removeRoot,withIntermediateDirectories:false)
+        let removeFile=removeRoot.appendingPathComponent("file");try payload.write(to:removeFile)
+        let keepFolder=root.appendingPathComponent("keep-folder");try fm.createDirectory(at:keepFolder,withIntermediateDirectories:false)
+        try payload.write(to:keepFolder.appendingPathComponent("keep"))
+        let removeLink=removeRoot.appendingPathComponent("folder-link");try fm.createSymbolicLink(at:removeLink,withDestinationURL:keepFolder)
+        try FileService.deletePermanently([removeLink])
+        try check(try Data(contentsOf:keepFolder.appendingPathComponent("keep"))==payload,"Permanent deletion removes link, not linked folder")
+        try rejects{try FileService.deletePermanently([removeFile,removeRoot.appendingPathComponent("missing")])}
+        try check(fm.fileExists(atPath:removeFile.path),"Permanent deletion preflight rejects missing source before removing earlier files")
+        try FileService.deletePermanently([removeRoot])
+        try check(!fm.fileExists(atPath:removeRoot.path),"Permanent deletion removes confirmed nonempty fixture directory")
+        try rejects{try FileService.deletePermanently([URL(fileURLWithPath:"/")])}
         let message = FileServiceError.operationFailed(completed: 2, item: "failed.txt", reason: "I/O failure").localizedDescription
         try check(message.contains("2") && message.contains("failed.txt") && message.contains("remain"), "Partial failure reporting")
         print("PASS: \(checks) filesystem checks; temporary fixtures cleaned on exit. Trash was not exercised.")

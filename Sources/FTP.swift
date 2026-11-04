@@ -60,14 +60,30 @@ struct FTPProfileStore {
     }
 }
 
+/// Global defaults are captured when a connection is opened; existing clients keep their options.
+struct FTPConnectionOptions: Equatable {
+    var passiveMode = true
+    var connectTimeout = 15
+    var transferTimeout = 600
+    func validate() throws {
+        guard (1...300).contains(connectTimeout), (1...86400).contains(transferTimeout) else {
+            throw FTPError.message("FTP connection timeout must be 1–300 seconds and operation timeout 1–86,400 seconds.")
+        }
+    }
+    func curlLines(listing:Bool) -> [String] {
+        ["connect-timeout = \(connectTimeout)", "max-time = \(listing ? min(120,transferTimeout) : transferTimeout)", passiveMode ? "ftp-pasv" : "ftp-port = \"-\""]
+    }
+}
+
 final class FTPClient {
     let profile: FTPProfile
     private let password: String
     private let executable: URL
-    init(profile: FTPProfile, password: String, executable: URL = URL(fileURLWithPath: "/usr/bin/curl")) throws {
-        try Self.validate(profile)
+    let options: FTPConnectionOptions
+    init(profile: FTPProfile, password: String, executable: URL = URL(fileURLWithPath: "/usr/bin/curl"), options: FTPConnectionOptions = FTPConnectionOptions()) throws {
+        try Self.validate(profile); try options.validate()
         guard !Self.hasControls(password), password.utf8.count <= 4096 else { throw FTPError.message("Password contains unsupported control characters or is too long.") }
-        self.profile = profile; self.password = password; self.executable = executable
+        self.profile = profile; self.password = password; self.executable = executable; self.options = options
     }
     private static func hasControls(_ value: String) -> Bool { value.unicodeScalars.contains { CharacterSet.controlCharacters.contains($0) } }
     static func validate(_ profile: FTPProfile) throws {
@@ -117,11 +133,12 @@ final class FTPClient {
     private func run(path: String, directory: Bool, commands: [String] = [], upload: URL? = nil,
                      download: URL? = nil, listing: Bool = false, task: FTPTask, maxBytes: UInt64? = nil) throws -> Data {
         if task.isCancelled { throw FTPError.cancelled }
-        var lines = ["silent", "show-error", "globoff", "connect-timeout = 15", "max-time = 600", "ftp-pasv",
+        var lines = ["silent", "show-error", "globoff",
                      "proxy = \"\"", "proto = \"=ftp,ftps\"", "url = \(try remoteURL(path, directory: directory).quotedForCurl())",
                      "user = \(try quote(profile.username + ":" + password))"]
+        lines += options.curlLines(listing:listing)
         if profile.security != .plainFTP { lines.append("ssl-reqd") }
-        if listing { lines.append("request = \"MLSD\""); lines.append("max-time = 120") }
+        if listing { lines.append("request = \"MLSD\"") }
         if let maxBytes { lines.append("max-filesize = \(max(1, min(maxBytes, UInt64(Int64.max))))") }
         if let upload { lines.append("upload-file = \(try quote(upload.path))") }
         for command in commands { lines.append("quote = \(try quote(command))") }
@@ -364,11 +381,12 @@ final class FTPBrowserWindow: NSWindowController, NSWindowDelegate, NSTableViewD
     private var actionButtons: [NSButton] = [], profiles: [FTPProfile] = [], entries: [FTPEntry] = []
     private let store = FTPProfileStore()
     private let downloadDirectory: URL
+    private let connectionOptions: FTPConnectionOptions
     private let onConnect: ((FTPClient, String) -> Void)?
     private var client: FTPClient?, task: FTPTask?, currentPath = "/", busy = false
 
-    init(downloadDirectory: URL, onConnect: ((FTPClient, String) -> Void)? = nil) {
-        self.downloadDirectory = downloadDirectory; self.onConnect = onConnect
+    init(downloadDirectory: URL, options: FTPConnectionOptions = FTPConnectionOptions(), onConnect: ((FTPClient, String) -> Void)? = nil) {
+        self.downloadDirectory = downloadDirectory; self.onConnect = onConnect; self.connectionOptions = options
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 940, height: onConnect == nil ? 620 : 245), styleMask: [.titled,.closable,.resizable,.miniaturizable], backing: .buffered, defer: false)
         window.title = "FTP Connect"; window.isReleasedWhenClosed = false
         super.init(window: window); window.delegate = self
@@ -435,7 +453,7 @@ final class FTPBrowserWindow: NSWindowController, NSWindowDelegate, NSTableViewD
     }
     @objc private func connect() {
         do {
-            let connection = try FTPClient(profile: profile(), password: password.stringValue)
+            let connection = try FTPClient(profile: profile(), password: password.stringValue, options: connectionOptions)
             client = connection
             if let onConnect {
                 let destination = try FTPClient.normalizedPath(path.stringValue)

@@ -1,0 +1,14 @@
+Native archive and FTP settings validation — 4 November 2026
+
+Sources/Operations.swift + Tests/ArchiveSettingsTests.swift
+PASS: 12 archive setting assertions
+Fixtures: generated temporary files; real bundled ARM64 7zz; a temporary wrapper fails the integrity-test command to prove enabled/disabled verification behavior.
+
+Sources/FTP.swift + Tests/FTPTests.swift
+FTP: 51 checks passed (disposable localhost server)
+Includes real active-mode listing/download, existing passive upload/download/tree operations, options validation, and timeout argument generation. No remote production server contacted.
+
+Sources/Operations.swift + Tests/OperationsTests.swift
+PASS: 18 native operation assertions
+
+All three executions exited 0.
