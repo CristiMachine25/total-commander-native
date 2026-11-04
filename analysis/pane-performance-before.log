@@ -1,0 +1,6 @@
+1000 single selection footer: 0.11396050453186035 ms/op
+1000 format-only config: 1.0213017463684082 ms/op
+1000 name cell: 0.03140103816986084 ms/op
+10000 single selection footer: 0.8872294425964355 ms/op
+10000 format-only config: 8.107304573059082 ms/op
+10000 name cell: 0.02939295768737793 ms/op

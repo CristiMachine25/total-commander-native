@@ -70,7 +70,7 @@ final class BriefGridView:NSView {
                 if selected { pane.configuration.selectionBackground.nsColor.setFill();rect.fill() }
                 var icon=index == 0 ? upIcon : (entry?.isDirectory == true ? folderIcon : fileIcon)
                 if pane.configuration.iconMode == .none {icon=nil}
-                else if pane.configuration.iconMode == .system,let entry,pane.location.localDirectory != nil {icon=NSWorkspace.shared.icon(forFile:entry.url.path)}
+                else if pane.configuration.iconMode == .system,let entry,pane.location.localDirectory != nil {icon=pane.systemIcon(for:entry)}
                 let iconSize=CGFloat(pane.configuration.iconSize)
                 icon?.draw(in:NSRect(x:rect.minX+4,y:rect.minY+(rowHeight-iconSize)/2,width:iconSize,height:iconSize),from:.zero,operation:.sourceOver,fraction:1,respectFlipped:true,hints:nil)
                 let name=index == 0 ? "[..]" : ((marked ? "✓ " : "")+(entry!.isDirectory ? "[\(entry!.name)]" : entry!.name))

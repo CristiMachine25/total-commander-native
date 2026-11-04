@@ -1,0 +1,6 @@
+1000 single selection footer: 0.003299713134765625 ms/op
+1000 repeated format-only config Apply: 0.024998188018798828 ms/op
+1000 name cell: 0.049942970275878906 ms/op
+10000 single selection footer: 0.004190206527709961 ms/op
+10000 repeated format-only config Apply: 0.0025987625122070312 ms/op
+10000 name cell: 0.04268908500671387 ms/op

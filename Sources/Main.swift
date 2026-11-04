@@ -70,6 +70,9 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
     var isLoading = false
     var entries: [FileEntry] = []
     private var listedEntries:[FileEntry]=[]
+    private var configurationApplied=false
+    private var cachedFont:NSFont=mono
+    private let systemIcons:NSCache<NSURL,NSImage>={let cache=NSCache<NSURL,NSImage>();cache.countLimit=512;return cache}()
     var marked = Set<URL>()
     var onSelectionChanged: (() -> Void)?
     private var normalContent: NSView?
@@ -224,7 +227,15 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
         }
     }
     func applyConfiguration(_ input:CommanderConfiguration) {
-        configuration=input.normalized();footer.isHidden = !configuration.showStatusBar
+        let next=input.normalized(),previous=configuration
+        guard !configurationApplied || next != previous else{return}
+        let firstApply = !configurationApplied
+        let refilter=firstApply || next.ignoreListEnabled != previous.ignoreListEnabled || next.ignorePatterns != previous.ignorePatterns
+        let resort=refilter || next.directoriesFirst != previous.directoriesFirst || next.caseSensitiveSort != previous.caseSensitiveSort
+        configuration=next;configurationApplied=true
+        let base=NSFont(name:configuration.fileFontName,size:configuration.fileFontSize) ?? NSFont.systemFont(ofSize:configuration.fileFontSize)
+        cachedFont=configuration.fileFontBold ? NSFontManager.shared.convert(base,toHaveTrait:.boldFontMask):base
+        footer.isHidden = !configuration.showStatusBar
         driveRowView?.isHidden = !configuration.showDriveList;path.isHidden = viewMode == .tree || !configuration.showCurrentDirectory
         table.headerView=configuration.showColumnHeaders ? storedHeader:nil
         table.rowHeight=max(configuration.rowHeight,Double(configuration.iconSize+4));table.backgroundColor=configuration.background.nsColor
@@ -233,15 +244,28 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
             let key=column.identifier.rawValue;column.isHidden = !configuration.visibleColumns.contains(key) || (key == "ext" && configuration.extensionStyle == .afterName)
             column.width=configuration.columnWidths[key] ?? column.width
         }
-        thumbnailGrid.pixels=configuration.thumbnailSize;thumbnailGrid.invalidateListing();directoryTree.applyConfiguration(configuration);updateTabs()
-        let selected=Set(table.selectedRowIndexes.compactMap{ $0>0 && $0<=entries.count ? entries[$0-1].url:nil })
-        entries=displayEntries(listedEntries);sortEntries();table.reloadData()
-        let rows=IndexSet(entries.enumerated().compactMap{selected.contains($0.element.url) ? $0.offset+1:nil});table.selectRowIndexes(rows.isEmpty ? IndexSet(integer:0):rows,byExtendingSelection:false)
+        if firstApply || configuration.thumbnailSize != previous.thumbnailSize {
+            thumbnailGrid.pixels=configuration.thumbnailSize;thumbnailGrid.invalidateListing()
+        }
+        directoryTree.applyConfiguration(configuration);updateTabs()
+        if resort {
+            let selected=Set(table.selectedRowIndexes.compactMap{ $0>0 && $0<=entries.count ? entries[$0-1].url:nil })
+            if refilter {entries=displayEntries(listedEntries)}
+            sortEntries();table.reloadData()
+            let rows=IndexSet(entries.enumerated().compactMap{selected.contains($0.element.url) ? $0.offset+1:nil})
+            table.selectRowIndexes(rows.isEmpty ? IndexSet(integer:0):rows,byExtendingSelection:false)
+        } else {
+            let selection=table.selectedRowIndexes
+            table.reloadData();table.selectRowIndexes(selection,byExtendingSelection:false)
+        }
         briefGrid.updateGeometry();updateDriveHeading();updateFooter()
     }
-    var configuredFont:NSFont {
-        let base=NSFont(name:configuration.fileFontName,size:configuration.fileFontSize) ?? NSFont.systemFont(ofSize:configuration.fileFontSize)
-        return configuration.fileFontBold ? NSFontManager.shared.convert(base,toHaveTrait:.boldFontMask):base
+    var configuredFont:NSFont {cachedFont}
+    func systemIcon(for entry:FileEntry)->NSImage {
+        let key=entry.url as NSURL
+        if let icon=systemIcons.object(forKey:key) {return icon}
+        let icon=NSWorkspace.shared.icon(forFile:entry.url.path)
+        systemIcons.setObject(icon,forKey:key);return icon
     }
     func itemColor(marked:Bool,selected:Bool)->NSColor {selected ? configuration.selectionForeground.nsColor:(marked ? configuration.markedForeground.nsColor:configuration.foreground.nsColor)}
     func showQuickView(_ overlay:NSView) {
@@ -266,15 +290,17 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
     @objc private func singleClick() {if configuration.singleClickOpen,table.clickedRow>=0,NSApp.currentEvent?.modifierFlags.intersection([.control,.shift,.option,.command]).isEmpty != false {onActivate?();onOpen?()}}
     @objc private func doubleClick() { if !configuration.singleClickOpen,table.clickedRow >= 0 { onActivate?(); onOpen?() } }
     func numberOfRows(in tableView: NSTableView) -> Int { entries.count + 1 }
-    func tableView(_ tableView: NSTableView, rowViewForRow row: Int) -> NSTableRowView? { let view=PaneSelectionRow();view.selectionColor=configuration.selectionBackground.nsColor;return view }
+    func tableView(_ tableView: NSTableView, rowViewForRow row: Int) -> NSTableRowView? {
+        let identifier=NSUserInterfaceItemIdentifier("pane.row")
+        let view=(tableView.makeView(withIdentifier:identifier,owner:self) as? PaneSelectionRow) ?? PaneSelectionRow()
+        view.identifier=identifier;view.selectionColor=configuration.selectionBackground.nsColor;return view
+    }
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
         guard row >= 0, row <= entries.count else { return nil }
         let key = tableColumn?.identifier.rawValue ?? "name"
         let text: String
-        var color = NSColor.black
         if row == 0 {
             text = key == "name" ? "[..]" : (key == "size" ? "<UP>" : "")
-            color = cyan
         } else {
             let e = entries[row - 1]
             switch key {
@@ -286,27 +312,35 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
                 let prefix = marked.contains(e.url) ? "✓ " : ""
                 text = prefix + (e.isDirectory ? "[" + e.name + "]" : (configuration.extensionStyle == .afterName || (e.name as NSString).pathExtension.isEmpty ? e.name : (e.name as NSString).deletingPathExtension))
             }
-            color = marked.contains(e.url) ? .systemRed : .black
         }
-        let configuredSize = UserDefaults.standard.integer(forKey: "fileFontSize")
-        let cell = label(text, color: color, size: configuredSize >= 9 ? CGFloat(configuredSize) : (key == "name" ? 13 : 11))
-        cell.font=configuredFont;cell.textColor=itemColor(marked:row>0 && marked.contains(entries[row-1].url),selected:table.selectedRowIndexes.contains(row))
-        if key == "size" { cell.alignment = .right }
-        cell.toolTip = row == 0 ? "Parent folder" : entries[row - 1].url.path
-        guard key == "name",configuration.iconMode != .none else {return cell}
-        let entry=row == 0 ? nil : entries[row-1]
-        let symbol=row == 0 ? "arrow.up.backward" : (entry?.isSymbolicLink == true ? "link" : (entry?.isDirectory == true ? "folder.fill" : "doc"))
-        let icon=NSImageView();icon.image=NSImage(systemSymbolName:symbol,accessibilityDescription:row == 0 ? "Parent folder" : (entry?.isDirectory == true ? "Folder" : "File"));icon.imageScaling = .scaleProportionallyDown
-        if configuration.iconMode == .system,let entry,location.localDirectory != nil {icon.image=NSWorkspace.shared.icon(forFile:entry.url.path)}
-        icon.contentTintColor=entry?.isDirectory == true ? .systemBlue : .secondaryLabelColor
-        // The cell remains a passive view: table owns all selection/focus/key handling.
-        let container=NSTableCellView();container.imageView=icon;container.textField=cell
-        container.addSubview(icon);container.addSubview(cell)
-        icon.translatesAutoresizingMaskIntoConstraints=false;cell.translatesAutoresizingMaskIntoConstraints=false
-        cell.lineBreakMode = .byTruncatingMiddle;cell.setContentCompressionResistancePriority(.defaultLow,for:.horizontal)
-        NSLayoutConstraint.activate([icon.leadingAnchor.constraint(equalTo:container.leadingAnchor,constant:2),icon.centerYAnchor.constraint(equalTo:container.centerYAnchor),icon.widthAnchor.constraint(equalToConstant:CGFloat(configuration.iconSize)),icon.heightAnchor.constraint(equalToConstant:CGFloat(configuration.iconSize)),cell.leadingAnchor.constraint(equalTo:icon.trailingAnchor,constant:5),cell.trailingAnchor.constraint(equalTo:container.trailingAnchor,constant:-2),cell.centerYAnchor.constraint(equalTo:container.centerYAnchor)])
-        container.toolTip=row == 0 ? "Parent folder" : entry?.name
-        container.setAccessibilityLabel(row == 0 ? "Parent folder" : entry!.name)
+        let hasIcon=key == "name" && configuration.iconMode != .none
+        let identifier=NSUserInterfaceItemIdentifier("pane.cell.\(key).\(hasIcon ? configuration.iconSize:0)")
+        let reused=tableView.makeView(withIdentifier:identifier,owner:self)
+        let container=hasIcon ? ((reused as? NSTableCellView) ?? NSTableCellView()):nil
+        let cell=container?.textField ?? (reused as? NSTextField) ?? label("")
+        cell.stringValue=text;cell.font=configuredFont
+        cell.textColor=itemColor(marked:row>0 && marked.contains(entries[row-1].url),selected:table.selectedRowIndexes.contains(row))
+        cell.alignment=key == "size" ? .right:.left
+        cell.toolTip=row == 0 ? "Parent folder":entries[row-1].url.path
+        guard let container else {cell.identifier=identifier;return cell}
+        container.identifier=identifier
+        let entry=row == 0 ? nil:entries[row-1]
+        let symbol=row == 0 ? "arrow.up.backward":(entry?.isSymbolicLink == true ? "link":(entry?.isDirectory == true ? "folder.fill":"doc"))
+        let icon=container.imageView ?? NSImageView()
+        icon.image=NSImage(systemSymbolName:symbol,accessibilityDescription:row == 0 ? "Parent folder":(entry?.isDirectory == true ? "Folder":"File"))
+        icon.imageScaling = .scaleProportionallyDown
+        if configuration.iconMode == .system,let entry,location.localDirectory != nil {icon.image=systemIcon(for:entry)}
+        icon.contentTintColor=entry?.isDirectory == true ? .systemBlue:.secondaryLabelColor
+        if container.textField == nil {
+            // Reuse the label, image and constraints as rows enter/leave the viewport.
+            container.imageView=icon;container.textField=cell
+            container.addSubview(icon);container.addSubview(cell)
+            icon.translatesAutoresizingMaskIntoConstraints=false;cell.translatesAutoresizingMaskIntoConstraints=false
+            cell.lineBreakMode = .byTruncatingMiddle;cell.setContentCompressionResistancePriority(.defaultLow,for:.horizontal)
+            NSLayoutConstraint.activate([icon.leadingAnchor.constraint(equalTo:container.leadingAnchor,constant:2),icon.centerYAnchor.constraint(equalTo:container.centerYAnchor),icon.widthAnchor.constraint(equalToConstant:CGFloat(configuration.iconSize)),icon.heightAnchor.constraint(equalToConstant:CGFloat(configuration.iconSize)),cell.leadingAnchor.constraint(equalTo:icon.trailingAnchor,constant:5),cell.trailingAnchor.constraint(equalTo:container.trailingAnchor,constant:-2),cell.centerYAnchor.constraint(equalTo:container.centerYAnchor)])
+        }
+        container.toolTip=row == 0 ? "Parent folder":entry?.name
+        container.setAccessibilityLabel(row == 0 ? "Parent folder":entry!.name)
         return container
     }
     func tableView(_ tableView: NSTableView, didClick tableColumn: NSTableColumn) {
@@ -351,7 +385,7 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
         applyListing(listing,location:next)
     }
     func applyListing(_ listing:[FileEntry], location next:PaneLocation) {
-        briefGrid.resetSelectionAnchor()
+        briefGrid.resetSelectionAnchor();systemIcons.removeAllObjects()
         let old=currentEntry?.url, same=location.identity == next.identity
         location=next
         if let local=next.localDirectory { directory=local }
@@ -379,7 +413,10 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
             heading.stringValue="\(configuration.footerSizeString(free.int64Value)) of \(configuration.footerSizeString(total.int64Value)) free"
         }else{heading.stringValue=location.shortName}
     }
-    var selectedEntries:[FileEntry] { let urls=Set(selectedURLs);return entries.filter { urls.contains($0.url) } }
+    var selectedEntries:[FileEntry] {
+        if !marked.isEmpty {return entries.filter{marked.contains($0.url)}}
+        return table.selectedRowIndexes.compactMap{row in row>0 && row<=entries.count ? entries[row-1]:nil}
+    }
     var currentEntry: FileEntry? {
         let i = table.selectedRow - 1
         return entries.indices.contains(i) ? entries[i] : nil
@@ -400,8 +437,8 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
     func clearMarks() { marked.removeAll(); table.reloadData(); updateFooter() }
     func updateFooter() {
         if brief {briefGrid.updateGeometry()};if viewMode == .thumbnails {thumbnailGrid.updateGeometry()}
-        let count = selectedURLs.count
-        let total=selectedEntries.filter{!$0.isDirectory}.reduce(Int64(0)) {sum,entry in let (value,overflow)=sum.addingReportingOverflow(max(0,entry.size));return overflow ? Int64.max:value}
+        let selected=selectedEntries,count=selected.count
+        let total=selected.filter{!$0.isDirectory}.reduce(Int64(0)) {sum,entry in let (value,overflow)=sum.addingReportingOverflow(max(0,entry.size));return overflow ? Int64.max:value}
         footer.stringValue = "\(entries.count) items  ·  \(count) selected · \(configuration.footerSizeString(total))" + (marked.isEmpty ? "" : "  ·  Space marks, Esc clears")
     }
     private func updateAppearance() {
