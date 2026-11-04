@@ -9,7 +9,7 @@ res=app/'Contents/Resources';res.mkdir(parents=True)
 binary=app/'Contents/MacOS/NativeCommander';binary.parent.mkdir()
 def run(*args): subprocess.run([str(x) for x in args],check=True)
 source_hashes={str(p.relative_to(base)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted((base/'Sources').glob('*.swift'))}
-run('xcrun','swiftc','-swift-version','5','-O','-target','arm64-apple-macosx13.0','-framework','AppKit','-framework','ImageIO',*sorted((base/'Sources').glob('*.swift')),'-o',binary)
+run('xcrun','swiftc','-whole-module-optimization','-swift-version','5','-O','-target','arm64-apple-macosx13.0','-framework','AppKit','-framework','ImageIO',*sorted((base/'Sources').glob('*.swift')),'-o',binary)
 assert source_hashes=={str(p.relative_to(base)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted((base/'Sources').glob('*.swift'))}, 'Sources changed during compilation; rebuild required'
 (res/'build-manifest.json').write_text(json.dumps(source_hashes,indent=2)+'\n')
 shutil.copy2(base/'Resources/7zz',res/'7zz')
@@ -24,7 +24,7 @@ shutil.copytree(base/'analysis',res/'analysis')
 if (base/'docs').exists():
  shutil.copytree(base/'docs',res/'docs')
  shutil.copytree(base/'docs',stage/'docs')
-info=dict(CFBundleName='Total Commander Native',CFBundleIconFile='TotalCommander',CFBundleDisplayName='Total Commander Native',CFBundleIdentifier='local.totalcommander.native',CFBundleExecutable='NativeCommander',CFBundlePackageType='APPL',CFBundleShortVersionString='0.9.0',CFBundleVersion='10',LSMinimumSystemVersion='13.0',NSHighResolutionCapable=True,NSPrincipalClass='NSApplication')
+info=dict(CFBundleName='Total Commander Native',CFBundleIconFile='TotalCommander',CFBundleDisplayName='Total Commander Native',CFBundleIdentifier='local.totalcommander.native',CFBundleExecutable='NativeCommander',CFBundlePackageType='APPL',CFBundleShortVersionString='0.10.0',CFBundleVersion='11',LSMinimumSystemVersion='13.0',NSHighResolutionCapable=True,NSPrincipalClass='NSApplication')
 (app/'Contents/Info.plist').write_bytes(plistlib.dumps(info))
 run('codesign','--force','--sign','-',res/'7zz')
 run('codesign','--force','--deep','--sign','-',app)

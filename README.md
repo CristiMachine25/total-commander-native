@@ -1,8 +1,16 @@
+## New in 0.10.0
+
+Keybindings now uses a searchable **Action / Shortcut** list with **Record shortcut**, **Restore default**, and a collapsed **Advanced** section. New Display, Tabstops and History controls add directory decorations/counts, sorting policies, Brief width limits and saved local directory history.
+
+![Simplified Keybindings settings](docs/screenshots/keybindings.png)
+
+The [original settings audit](analysis/settings-audit.md) identifies implemented, partial, missing and platform-specific options. This release does not implement every original setting.
+
 # Total Commander Native
 
 A native, keyboard-driven dual-pane file manager for **Apple Silicon · macOS 13+**. Browse your Mac folders and mounted volumes directly, with a classic Total Commander-style interface—no Wine or Windows runtime.
 
-**0.9.0 development build.** This is an independent reconstruction, not an official Ghisler release or a complete port. [Compatibility and remaining work →](analysis/remaining-parity-gaps.md)
+**0.10.0 development build.** This is an independent reconstruction, not an official Ghisler release or a complete port. [Compatibility and remaining work →](analysis/remaining-parity-gaps.md)
 
 [Download a build](https://github.com/CristiMachine25/total-commander-native/releases) · [Test results](TEST-RESULTS.md) · [Feature coverage](analysis/native-coverage.md)
 
@@ -64,7 +72,7 @@ This is one native horizontal bar. Windows `.bar` files, nested/vertical bars, D
 
 **Configuration → Options → Tabstops** controls file-size display: bytes, kilobytes, automatic units, or fixed MB/GB. Header/footer units can be chosen separately, with 1000- or 1024-byte bases.
 
-The app currently saves **96 top-level settings, including structured column sets, view modes, rules and dark palettes** for layout, fonts, colors, icons, columns, tabs, viewing, quick search and more. Not every original setting is implemented; unsupported categories identify their missing options.
+The app currently saves **105 top-level settings, including structured column sets, view modes, rules and dark palettes** for layout, fonts, colors, icons, columns, tabs, viewing, quick search and more. Not every original setting is implemented; unsupported categories identify their missing options.
 
 Working configuration pages include:
 

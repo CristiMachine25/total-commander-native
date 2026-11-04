@@ -1,5 +1,17 @@
 # Native validation ledger
 
+## 0.10.0 simplified shortcuts and settings audit — 4 November 2026
+
+- Original settings audit: 601 option/behavior rows across 32 help pages, plus 847 INI declaration occurrences marked unverified. These counts are not independent feature totals or a parity percentage. See [scope and evidence](analysis/settings-audit.md).
+- Keybindings: [44 editor assertions](analysis/0.10-keybindings-tests.log), including defaults/custom mappings, recording/cancellation, explicit replacement, multiple bindings, hidden Advanced controls and searchable numbered profile commands.
+- Configuration: [66 strict import/migration assertions](analysis/0.10-configuration-files-tests.log) and [41 actual Preferences assertions](analysis/0.10-configuration-ui-tests.log). Version 5 preserves versions 1–4 and rejects unsupported sort names and out-of-range new values. New display/history controls and aliases survive category navigation and Apply.
+- Display: [26 controller/renderer assertions](analysis/0.10-display-parity-tests.log), including directory decorations/counts, four filename comparators, primary/secondary sorting, mixed-directory transitivity guard, Brief measurement/cap and persistence.
+- History: [27 assertions](analysis/0.10-history-tests.log), covering independent session save policy, explicit Save/Delete, safe local-only storage, malformed data, menu icons/limits and navigation. Tests use isolated preferences; no personal history is written by the test suite.
+- Visible read-only mounted optimized build: the action-first Keybindings list showed Brief view with Ctrl+F1; recording Ctrl+Shift+B added an override and it dispatched to the actual pane. Advanced remained collapsed. Directory bracket removal, slash suffix, character-code Folder10-before-Folder2 order and selected/total directory counts changed immediately. History maximum 2 showed two items and persisted across quit/relaunch.
+- After testing, selective restoration through the native configuration editor preserved all unrelated settings. A fresh independent comparison found zero differences in existing configuration values, both original pane paths/tab indices/Full views, and saved-history state. All nine new fields were restored to their baseline defaults, the test shortcut removed, and the marked fixture deleted.
+- Optimized final-source application smoke exited 0: [log](analysis/0.10-optimized-smoke.log). The settings-only screenshot contains no personal file listing.
+- The [complete backend/provider suite](analysis/0.10-full-tests.log) exited 0, including all new editor/display/history tests. Its immutable snapshot preceded only the final disabled-footer scan guard. The final source passed [13 pane-performance assertions](analysis/0.10-final-pane-performance.log), the optimized smoke, and the visible mounted-build checks above. The 10,000-row footer benchmark is a bounded local measurement, not proof of Windows speed parity.
+
 ## 0.9.0 keybindings, tab views and appearance — 4 November 2026
 
 - The complete backend/provider suite exited 0: [full run](analysis/0.9-full-tests.log). This snapshot preceded the final targeted keyboard-focus and dark-label contrast corrections; their separate regression results are recorded below.

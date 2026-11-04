@@ -1,3 +1,7 @@
+# Configuration coverage: 0.10.0
+
+105 typed top-level fields; native JSON version 5. Nine new display/history settings and simplified keybindings. See the [option-level original audit](settings-audit.md), which supersedes category-level completeness assumptions. Historical sections below retain earlier counts and limitations.
+
 # Configuration coverage: 0.9.0
 
 Adds tabsRememberViewSettings, tabsRememberFileFilters, appearanceMode and darkPalette: 96 top-level configuration fields, with nested profiles/palettes. A dedicated Keybindings page edits existing shortcut/alias fields. Normal and dark mode overrides are separate. Native JSON format is now version 4 with versions 1–3 migration.
