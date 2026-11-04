@@ -58,9 +58,15 @@ enum FileService {
         let urls = try fm.contentsOfDirectory(at: directory, includingPropertiesForKeys: Array(keys), options: showHidden ? [] : [.skipsHiddenFiles])
         return try urls.map { url in
             let values = try url.resourceValues(forKeys: keys)
-            var directory: ObjCBool = false
-            _ = fm.fileExists(atPath: url.path, isDirectory: &directory)
-            return FileEntry(url: url, name: url.lastPathComponent, isDirectory: directory.boolValue, isSymbolicLink: values.isSymbolicLink ?? false, size: Int64(values.fileSize ?? 0), modified: values.contentModificationDate)
+            // Directory metadata was prefetched by contentsOfDirectory. Only a
+            // symlink needs a target lookup to retain directory-link navigation.
+            var directory=values.isDirectory ?? false
+            if values.isSymbolicLink == true || values.isDirectory == nil {
+                var targetDirectory:ObjCBool=false
+                _ = fm.fileExists(atPath:url.path,isDirectory:&targetDirectory)
+                directory=targetDirectory.boolValue
+            }
+            return FileEntry(url: url, name: url.lastPathComponent, isDirectory: directory, isSymbolicLink: values.isSymbolicLink ?? false, size: Int64(values.fileSize ?? 0), modified: values.contentModificationDate)
         }.sorted {
             if $0.isDirectory != $1.isDirectory { return $0.isDirectory }
             return $0.name.localizedStandardCompare($1.name) == .orderedAscending
