@@ -11,7 +11,7 @@
 - [x] Configuration UI worker: list/subeditors with add, copy, remove, ordering, Apply/Cancel and cross-reference validation.
 - [x] Root: configuration schema v3 with v1/v2 migration; manual menus and shortcuts; dependency integration.
 - [x] Full backend suite, actual controller integration tests and optimized application smoke.
-- [x] Visible mounted fixture verified automatic column/sort application. Further interactive checks and restoration were paused when the user opened Configuration; controller regressions cover navigation/restoration.
+- [x] Visible mounted fixture verified automatic column/sort application. After a brief user-editing pause, visible navigation restored standard columns; test profiles and fixtures were removed and user settings preserved.
 - [x] Document exact supported options and remaining original differences; granular commits; package and verify DMG/source, publish release.
 
 Original option reference: local original help pages under work/total-commander/help-extracted. Existing user authorization covers this continuation, tests and release; no additional design approval is needed.

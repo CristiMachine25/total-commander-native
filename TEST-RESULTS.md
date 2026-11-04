@@ -2,6 +2,8 @@
 
 ## 0.8.0 display settings validation — 4 November 2026
 
+- Post-package visible follow-up: after the user authorized continuing, navigation from the image fixture to Documents restored the standard Name/Ext/Size/Date/Attr columns. Demo profiles were removed through the native JSON editor while preserving all other current settings; persisted data was independently compared with the intended cleanup. The original pane paths were restored and the marked temporary fixture deleted. This follow-up supplements the ledger bundled at packaging time.
+
 - The complete backend/provider test script exited 0 against the final frozen source. [Full run](analysis/0.8-full-tests.log). The optimized application smoke also exited 0; [smoke output](analysis/0.8-optimized-smoke.log).
 - Visible read-only mounted-DMG check: a staged image-folder rule applied custom Bytes and Size MB columns and descending size order to the image fixture; the opposite pane retained standard columns. Full interactive navigation/restoration testing was interrupted by a concurrent user opening Configuration, so those paths are covered by controller tests rather than claimed as visible passes.
 
