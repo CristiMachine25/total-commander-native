@@ -10,7 +10,7 @@ actual={str(p.relative_to(base)):hashlib.sha256(p.read_bytes()).hexdigest() for 
 if json.loads((res/'build-manifest.json').read_text()) != actual:
     raise SystemExit('Sources differ from the compiled stage. Run build.py first.')
 def run(*args): subprocess.run([str(a) for a in args],cwd=base,check=True)
-for name in ['README.md','TEST-RESULTS.md','THIRD-PARTY.txt']:
+for name in ['README.md','TEST-RESULTS.md','THIRD-PARTY.txt','LICENSE']:
     shutil.copy2(base/name,res/name)
 shutil.copytree(base/'analysis',res/'analysis',dirs_exist_ok=True)
 if (base/'docs').exists():

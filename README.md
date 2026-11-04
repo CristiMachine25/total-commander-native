@@ -2,7 +2,7 @@
 
 A native, keyboard-driven dual-pane file manager for **Apple Silicon · macOS 13+**. Browse your Mac folders and mounted volumes directly, with a classic Total Commander-style interface—no Wine or Windows runtime.
 
-**0.5.1 development build.** This is an independent reconstruction, not an official Ghisler release or a complete port. [Compatibility and remaining work →](analysis/remaining-parity-gaps.md)
+**0.6.0 development build.** This is an independent reconstruction, not an official Ghisler release or a complete port. [Compatibility and remaining work →](analysis/remaining-parity-gaps.md)
 
 [Download a build](https://github.com/CristiMachine25/total-commander-native/releases) · [Test results](TEST-RESULTS.md) · [Feature coverage](analysis/native-coverage.md)
 
@@ -45,6 +45,16 @@ Builds are ad-hoc signed, not Developer ID notarized. Release assets include sou
 To select scattered files without a mouse, focus the file list, move with the arrows, and press **Space** on each wanted file. A checkmark identifies each marked file; the blue row is the current cursor position. **⌘Space** is macOS Spotlight, not file selection.
 
 Some Mac keyboards require **Fn** for function keys. Supported original Control shortcuts keep **Control**; supported Alt shortcuts use **Option**. The context menu provides the app's native actions, not Windows shell extensions.
+
+## Customize the button bar
+
+Open **Configuration → Button Bar…**, right-click a toolbar button and choose **Change…**, or click the **…** button at the end of the bar.
+
+Add or delete buttons, move them up/down in the order, and insert separators. Each button can run a supported internal command or open a Mac app, program, file or folder. Choose a tooltip/label and optional image file; executable programs accept quoted literal parameters and a local start path. Icon sizes range from 16–48 pixels, with optional text labels and horizontal scrolling for long bars.
+
+**Apply** saves and redraws immediately; **OK** also closes the editor. **Cancel** discards edits made since the last Apply. **Restore Defaults** stages the original 14 buttons until you apply. The bar is saved separately from the general JSON settings editor. Show/hide it through **Configuration → Options → Layout → Show button bar**.
+
+This is one native horizontal bar. Windows `.bar` files, nested/vertical bars, DLL icons, and Total Commander parameter macros are not supported yet. Parameters do not expand shell variables or wildcards.
 
 ## Make it yours
 
