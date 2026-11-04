@@ -1,0 +1,7 @@
+*.dmg
+*.zip
+build-stage.txt
+.DS_Store
+.build/
+__pycache__/
+*.pyc

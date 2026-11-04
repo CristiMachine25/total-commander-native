@@ -1,0 +1,13 @@
+Independent native implementation. Total Commander is a product of Christian Ghisler / Ghisler Software GmbH. Reference version:11.58.1, https://www.ghisler.com/
+
+7-Zip 26.05, native ARM64 command-line archive engine.
+Copyright Igor Pavlov. LGPL with unRAR restriction and BSD portions.
+Official source and license: https://www.7-zip.org/ https://www.7-zip.org/license.txt
+Source archive retained in work/total-commander/dependency-sources/7zip-26.05.tar.gz.
+The executable is bundled separately and remains replaceable.
+
+Application icon extracted from the locally downloaded official Total Commander executable; copyright belongs to its respective owner. Included for this personal reconstruction.
+
+Toolbar images extracted from WCMICONS.DLL, mapped using the official DEFAULT.BAR icon indices. Original artwork attribution remains with Ghisler.
+
+English menu and command definitions (WCMD_ENG.MNU, TOTALCMD.INC) reproduced from the official Total Commander 11.58.1 package for this personal reconstruction. Copyright Ghisler Software GmbH.
