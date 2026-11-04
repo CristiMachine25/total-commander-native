@@ -1,29 +1,89 @@
-# Total Commander Native — 0.5.0 development build
+# Total Commander Native
 
-Native Swift/AppKit reconstruction for Apple Silicon and macOS 13 or later. It uses your Mac folders and mounted volumes directly, without Wine or a Windows runtime.
+A native, keyboard-driven dual-pane file manager for **Apple Silicon · macOS 13+**. Browse your Mac folders and mounted volumes directly, with a classic Total Commander-style interface—no Wine or Windows runtime.
 
-**This is not an exact or complete Total Commander port.** All original settings and features remain the requested goal, not an achieved result. REA exported 5,565 pseudocode files from 24,601 provider procedure candidates, with 2 explicit failures and 19,034 unresolved entries. These exports and original resource/help evidence inform an independent implementation; they are not a recovered buildable original source project.
+**0.5.1 development build.** This is an independent reconstruction, not an official Ghisler release or a complete port. [Compatibility and remaining work →](analysis/remaining-parity-gaps.md)
 
-Open the DMG, drag the app to Applications, and open it. This build is ad-hoc signed, not Developer ID notarized. Control remains Control and Option maps supported Alt shortcuts. macOS may intercept combinations, and some keyboards require Fn for function keys.
+[Download a build](https://github.com/CristiMachine25/total-commander-native/releases) · [Test results](TEST-RESULTS.md) · [Feature coverage](analysis/native-coverage.md)
 
-Implemented scopes include dual panes; Full, horizontal-column Brief, local directory-tree and thumbnail views; one or two separate local trees; tabs/history; selection/filtering; native bounded text/hex/image viewing and editing; queued copy/move with collision handling; copy-only synchronization; multi-rename; checksums; bounded text comparison; FTP/FTPS panes; and local split/combine with CRC verification.
+![Dual-pane file manager with generated demo folders and files](docs/screenshots/file-manager.png)
 
-Archive reading, extraction and integrity testing cover ZIP including ZIP64 and supported password ZIP, 7z, TAR, compressed TAR, GZIP, BZIP2, XZ and tested RAR fixtures. Format or encryption variants outside the tested subset can still fail explicitly. Mutation remains limited to supported ordinary ZIP: member add/delete/rename/edit/repack, including nested and FTP-origin writeback with recovery copies. Non-ZIP and password sessions are read-only. Split-file tools do not imply split-archive support.
+*Screenshots use temporary, generated demo files. No personal folders or documents are shown.*
 
-Configuration now has 52 persistent typed settings across 13 functional categories, within a 24-category navigation list. It includes layout, fonts/colors/icons, columns, file and footer size units, tabs, operation, viewer/editor, thumbnails, history, Quick Search and display-only Ignore List filtering. Size display includes the ten original styles plus clearly labeled native fixed-MB/GB choices and 1000/1024 unit bases. Unsupported categories explain gaps rather than showing inert controls. Settings use native JSON-backed preferences. **Configuration → Change Settings Files Directly…** now opens a native JSON editor with validated Apply, full native JSON import/export, and a reported partial `wincmd.ini` import. Imported files are not modified implicitly; unsupported Windows keys are reported. See [configuration files](analysis/configuration-files.md).
+## Install
 
-FTP requires MLSD and lacks resume, SFTP and complete original connection options. Synchronization does not mirror deletions. Ignore rules hide entries; they do not recursively exclude items from copy/move/synchronization. Windows DLL plugins, full Lister formats, every shortcut and original configuration option, custom columns, branch view, exact dialogs and pixel-identical rendering remain incomplete. See [remaining gaps](analysis/remaining-parity-gaps.md), [coverage](analysis/native-coverage.md), and [configuration details](analysis/configuration-coverage.md).
+1. Open the [releases page](https://github.com/CristiMachine25/total-commander-native/releases) while signed in with access to this private repository.
+2. Download `Total-Commander-Native-development.dmg`.
+3. Open the disk image, drag **Total Commander Native** into **Applications**, and launch it.
 
-Command input runs explicit POSIX shell commands with your user privileges or supported internal commands. It is not a Windows command interpreter.
+Builds are ad-hoc signed, not Developer ID notarized. Release assets include source code, checksums, and verification details.
 
-## Responsiveness and source history
+## Work with files
 
-Formatting now reuses bounded thread-local formatters; the settings dialog retains visited category controls and avoids a redundant directory scan on Apply. Pane selection uses direct row lookup, unchanged/appearance-only configuration avoids refiltering/resorting, file cells reuse views, and directory listing reuses prefetched metadata. Local measurements show improvements in these specific paths, not Windows performance parity: [settings/formatters](analysis/configuration-performance.md), [pane operations](analysis/pane-responsiveness.md), [directory listing](analysis/directory-listing-performance.md). First-open settings latency did not materially improve, and local directory listing and first-time icon lookup can still block.
+- **Browse:** Full, Brief, thumbnail and directory-tree views; tabs, history, filtering, and one or two separate trees.
+- **Manage:** Copy/move queues, collision handling, multi-rename, checksums, split/combine, and copy-only directory synchronization.
+- **Inspect:** Native text, hexadecimal and image viewing; bounded UTF-8 editing and text comparison.
+- **Open archives:** Browse supported ZIP/ZIP64, password ZIP, 7z, TAR/compressed TAR, GZIP, BZIP2, XZ and tested RAR variants. Archive writes are limited to supported ordinary ZIP sessions.
+- **Connect:** FTP/FTPS directories and transfers in the main panes. FTP requires MLSD; SFTP and resume remain unsupported.
 
-The private source repository is [CristiMachine25/total-commander-native](https://github.com/CristiMachine25/total-commander-native). Its eight baseline commits organize previously implemented work retrospectively; subsequent commits record new changes separately. They are not a fabricated historical sequence of the original development.
+### Keyboard and mouse
+
+| Action | Shortcut |
+|---|---|
+| Return from the command/path field to the file list | **Esc** |
+| Move through files | **↑ / ↓** |
+| Mark/unmark a file and advance | **Space** |
+| Switch panes | **Tab** |
+| Open the focused file or folder | **Return** |
+| View / Edit | **F3 / F4** |
+| Copy / Move | **F5 / F6** |
+| New folder / Delete | **F7 / F8** |
+| File context menu | **Right-click**, **Control-click**, or **Shift+F10** |
+| Select nonadjacent rows with the mouse | **⌘-click** |
+| Enter a folder path | **⌘L** |
+
+To select scattered files without a mouse, focus the file list, move with the arrows, and press **Space** on each wanted file. A checkmark identifies each marked file; the blue row is the current cursor position. **⌘Space** is macOS Spotlight, not file selection.
+
+Some Mac keyboards require **Fn** for function keys. Supported original Control shortcuts keep **Control**; supported Alt shortcuts use **Option**. The context menu provides the app's native actions, not Windows shell extensions.
+
+## Make it yours
+
+![Configuration dialog with size-display and column options](docs/screenshots/configuration.png)
+
+**Configuration → Options → Tabstops** controls file-size display: bytes, kilobytes, automatic units, or fixed MB/GB. Header/footer units can be chosen separately, with 1000- or 1024-byte bases.
+
+The app currently saves **52 settings** for layout, fonts, colors, icons, columns, tabs, viewing, quick search and more. Not every original setting is implemented; unsupported categories identify their missing options.
+
+**Configuration → Change Settings Files Directly…** opens the native JSON editor. Export/import the complete native settings, or import a documented subset of `wincmd.ini`. Windows options that cannot be mapped are reported. Imports are staged for review before Apply and do not silently modify the source file. [Configuration-file format and supported INI keys →](analysis/configuration-files.md)
+
+## Performance and compatibility
+
+Formatter reuse, cached settings pages and menu resources, reusable file cells, and reduced metadata queries improve responsiveness. The [settings benchmarks](analysis/configuration-performance.md), [pane benchmarks](analysis/pane-responsiveness.md) and [directory-listing benchmarks](analysis/directory-listing-performance.md) document the measured gains and limits. These are measurements on the test Mac, not proof of Windows-equivalent speed.
+
+Full Windows plugin support, all original settings and shortcuts, custom columns/view rules, complete archive/FTP options, and pixel-identical rendering remain unfinished. Synchronization does not mirror deletions; Ignore List currently filters displayed entries only. See [remaining differences](analysis/remaining-parity-gaps.md) and the release-specific [validation ledger](TEST-RESULTS.md).
 
 ## Build and test
 
-Run `python3 build.py` with Xcode command-line tools, then `bash test.sh`. FTP fixture tests require Python with pyftpdlib and pyOpenSSL; choose it with `FTP_TEST_PYTHON=/path/to/python bash test.sh`. Test servers bind localhost and use disposable fixtures. Bundled 7-Zip is native ARM64. Preferences use `local.totalcommander.native`.
+Requires an Apple Silicon Mac, Xcode command-line tools, and Python 3. The native ARM64 archive tool is bundled.
 
-This is an independent reconstruction, not an official Ghisler release. Original resource and archive-tool notices are in [THIRD-PARTY.txt](THIRD-PARTY.txt). The release-specific integrated, mounted-DMG and visible validation ledger is [TEST-RESULTS.md](TEST-RESULTS.md); earlier build checks do not certify every 0.5.0 change.
+```sh
+python3 build.py
+```
+
+Run the test suite with its local FTP fixture dependencies:
+
+```sh
+python3 -m venv .build/test-env
+.build/test-env/bin/python -m pip install pyftpdlib pyOpenSSL
+FTP_TEST_PYTHON="$PWD/.build/test-env/bin/python" bash test.sh
+```
+
+Tests use disposable files and localhost servers. To package a release after building and committing all source/documentation changes:
+
+```sh
+python3 package.py
+```
+
+Packaging rejects a compiled stage whose source hashes no longer match the checkout, verifies the ad-hoc signature and DMG, and archives the committed source. Generated release artifacts are excluded from Git.
+
+[Source-history notes](HISTORY.md) · [Reconstruction evidence](analysis/decompilation.md) · [Third-party notices](THIRD-PARTY.txt)
