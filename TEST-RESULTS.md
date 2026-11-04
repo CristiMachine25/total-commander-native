@@ -1,5 +1,18 @@
 # Native validation ledger
 
+## 0.5.1 validation — 4 November 2026
+
+Targeted interaction update: 24 context-menu regression assertions passed against a frozen full-source snapshot. Coverage includes clicked-pane activation, marked-group preservation/replacement, blank space and parent rows, Full/Brief/thumbnail hit testing, stale-action rejection, busy/loading guards, and FTP/read-only archive action availability. The optimized application passed its configuration/UI smoke including Escape from command/path fields and Space marking nonadjacent rows; see [smoke output](analysis/0.5.1-smoke.log). The complete backend suite was not repeated for this interaction-only update; 0.5.0 results remain separately recorded below.
+
+Visible checks in the mounted optimized 0.5.1 application:
+
+- Right-click and Control-click on a demo file opened the file action menu; View opened the matching file contents in Lister.
+- Shift+F10 opened the shared file context menu.
+- Escape left the command field; arrows and Space marked two nonadjacent demo files, confirmed by checkmarks and the selected-file footer.
+- README screenshots show generated demo files only, plus the configuration size-display page. Both images were visually reviewed. Temporary demo folders were deleted afterward, and the prior pane paths and folder-tab visibility were restored.
+
+These checks establish the listed interactions, not full original application parity.
+
 ## 0.5.0 validation — 4 November 2026
 
 All 33 distinct test executions passed. The initial harness run completed through panel tests; removing duplicate test invocations while it was running interrupted the shell's remaining script read. The final PaneView, PanePerformance and ProviderIntegration executions were therefore run explicitly against a frozen source snapshot and all exited 0. The combined evidence is [0.5-final-test-run.log](analysis/0.5-final-test-run.log). Two repeated formatter/file-service runs in that log are not additional coverage.

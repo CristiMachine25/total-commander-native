@@ -1,0 +1,3 @@
+Configuration UI integration passed: size cells, columns, row heights, layout, selection, thumbnails, tree, masks
+UI smoke tests passed
+sandbox_extension_issue_file_to_process failed for /var/folders/sn/_l3lknnd5wv4ckd0q288ts_w0000gn/T/tc-native-d5q0_xoh/Total Commander Native.app: 1 (Operation not permitted)
