@@ -1,0 +1,31 @@
+{
+  "inputs": [
+    {
+      "source": "inisettings.htm",
+      "sha256": "0a5503d36898a4a9f3f067998b3137fd27ff04d4941fa26cf48bd9692dad4484",
+      "declarations": 0
+    },
+    {
+      "source": "inisettings1.htm",
+      "sha256": "693bc1989f5190c9db69082379a060ba2e60395e8f72bb406e34047f2d48c27e",
+      "declarations": 238
+    },
+    {
+      "source": "inisettings2.htm",
+      "sha256": "983f59313254b85697d63a0670d8bef2754bc9d9b5de32f4c0cfb435ec17fbf6",
+      "declarations": 200
+    },
+    {
+      "source": "inisettings3.htm",
+      "sha256": "db64432dcdb909f139cffd07353c1b985aad4fe4a0747b0605ebdc79b04a21fa",
+      "declarations": 333
+    },
+    {
+      "source": "wcx_ftp_ini_settings.htm",
+      "sha256": "82f8a072649c23fd2732e7b6cc22983c7e6ef664c7066d95636a62646376b7ef",
+      "declarations": 76
+    }
+  ],
+  "rows": 847,
+  "scope": "Literal declarations in s18 spans of five original help pages. Numbered templates and examples may overlap; counts are not unique settings or implementation coverage. Other markup, undocumented settings, dynamic plugin options and behavior require separate investigation."
+}

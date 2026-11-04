@@ -1,0 +1,21 @@
+{
+  "dlg_assotiate.htm": "b831ca476f50782c58046ddf2f159cb50e4c21c1ed88184219930209c076d015",
+  "dlg_choosecommand.htm": "300bc9b80d415eed895281a3ed26ded62108612122f2625dba37ba0e2f6068fc",
+  "dlg_config2.htm": "05ca3852839ba31cc2ecedab3db69bacd1040c2cf91f1e8dc5701b66ac58152d",
+  "dlg_configbuttonbar.htm": "25e0f340800b1b9885e557d5ced642db7366bf5f0740c36c881a35e8199fe8d0",
+  "dlg_configconfirmation.htm": "a807f02f09dd3ea3005058dcab4a12aeef4ce655d7ce347ba4ae1764d6bcd28a",
+  "dlg_configcopydelete.htm": "a5c282e2b187b680e5249564523d2d1f7fb7ec3a250d4df82365f9bffa7cfb03",
+  "dlg_configedit.htm": "4661279708370d7c210968e044da73befcc0c73c48c569e634eb9cc8e0aac0b7",
+  "dlg_configftp.htm": "dc468de814fb3e7a427f451513499689be840c3db09c14da14a85e132450ca8d",
+  "dlg_confighistory.htm": "cab4905e41a8cd30939b772ac0418dd30432bbfba6acd51ac40db563d7b83a70",
+  "dlg_configignorelist.htm": "856acb36ff8eab063ed615d41ddd2e85d22b309d7ea340e055a307aaeca10172",
+  "dlg_configlanguage.htm": "04f08fe9bb7e981e33ee23142bf45f8c32c097d9c50ca8859d793ee23b6a3e7d",
+  "dlg_configpack.htm": "7b62d8d23961acc2bca3a91ed9c39ef780c152396d0068d83a94df21a4e2c4b2",
+  "dlg_configplugin.htm": "3de1ebfd037ad29ea4cd5537e51144f713aafd665cca294c7e247bf773c9e743",
+  "dlg_configquicksearch.htm": "d0a84ae06eb4fef6706023d9b8ef25e3a44592f1b8898dc805dd2990a9cec6bd",
+  "dlg_configrefresh.htm": "8975d646e9fd39d802efc7702aba91a13a5b8ab77c38e1e6b53cf404efb9cb2d",
+  "dlg_internal7zipconfig.htm": "30be5e718d6c79db5ecc15d637559050102b28d0577d1dff742366277de7ea67",
+  "dlg_internalzipconfig.htm": "b44b7cbb4b5d90ae410ee80740db7316693d2602eb975f247a3066bc7800ce0e",
+  "dlg_listerconfig.htm": "ea256345de8d36f8b46f09e2a5604da331b37d625959ea87ba86fe43133cd68c",
+  "dlgconfiglogfile.htm": "518d1a61c200bebb39ffec740c8af1987514f6b40d93299d088a7b9a5b14c4ff"
+}

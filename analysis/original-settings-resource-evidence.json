@@ -1,0 +1,341 @@
+{
+  "evidence_id": "ev_565731903aca5f839c0fbd4f1324f3591aade55a3a95a03538bc903c82a21716",
+  "subject": {
+    "name": "TOTALCMD64.EXE",
+    "digest": {
+      "sha256": "570f455917d991d32329005e259653fb4817716f137297ed82389ec920352f99"
+    },
+    "local_path": "/Users/cristi/Documents/Codex/2026-10-30/using/work/total-commander/original/TOTALCMD64.EXE",
+    "format": "pe",
+    "architecture": "x86_64"
+  },
+  "provider": {
+    "id": "rea-pe-resources",
+    "name": "REA PE resource parser",
+    "version": "1"
+  },
+  "operation": "inspect_pe_resources",
+  "coverage": {
+    "status": "complete",
+    "examined_entries": 1066,
+    "resources": 528
+  },
+  "resource_types": [
+    1,
+    2,
+    3,
+    5,
+    6,
+    10,
+    12,
+    14,
+    16,
+    24
+  ],
+  "dialog_resources": [
+    {
+      "type": {
+        "kind": "id",
+        "id": 5
+      },
+      "name": {
+        "kind": "name",
+        "name": "DOWNDLG",
+        "utf16le_hex": "44004f0057004e0044004c004700",
+        "location": {
+          "offset": 9962982,
+          "bytes": 16
+        }
+      },
+      "payload": {
+        "rva": 10742992,
+        "location": {
+          "offset": 10426064,
+          "bytes": 560
+        },
+        "sha256": "d8f266bc6f3ecc2892eb8c7eae9784f3871330588de2828b7764a4aae48ad4b8"
+      }
+    },
+    {
+      "type": {
+        "kind": "id",
+        "id": 5
+      },
+      "name": {
+        "kind": "name",
+        "name": "DOWNDLGLIST1",
+        "utf16le_hex": "44004f0057004e0044004c0047004c004900530054003100",
+        "location": {
+          "offset": 9962998,
+          "bytes": 26
+        }
+      },
+      "payload": {
+        "rva": 10743552,
+        "location": {
+          "offset": 10426624,
+          "bytes": 508
+        },
+        "sha256": "4d7630c91b321e84296e88da4bcdef597676aadfdf2d915d44ac06b85774464c"
+      }
+    },
+    {
+      "type": {
+        "kind": "id",
+        "id": 5
+      },
+      "name": {
+        "kind": "name",
+        "name": "DOWNDLGLIST1W",
+        "utf16le_hex": "44004f0057004e0044004c0047004c0049005300540031005700",
+        "location": {
+          "offset": 9963024,
+          "bytes": 28
+        }
+      },
+      "payload": {
+        "rva": 10744060,
+        "location": {
+          "offset": 10427132,
+          "bytes": 524
+        },
+        "sha256": "0d8b0253d2722df00ef9132ddcfd026b747b2541138c71be1d62799f6f14cb43"
+      }
+    },
+    {
+      "type": {
+        "kind": "id",
+        "id": 5
+      },
+      "name": {
+        "kind": "name",
+        "name": "DOWNDLGLIST2",
+        "utf16le_hex": "44004f0057004e0044004c0047004c004900530054003200",
+        "location": {
+          "offset": 9963052,
+          "bytes": 26
+        }
+      },
+      "payload": {
+        "rva": 10744584,
+        "location": {
+          "offset": 10427656,
+          "bytes": 608
+        },
+        "sha256": "4ada02d336f9d0e07bbe64bdc576cdc92d83e0cbee9e4846f9a6c58b0f10b52e"
+      }
+    },
+    {
+      "type": {
+        "kind": "id",
+        "id": 5
+      },
+      "name": {
+        "kind": "name",
+        "name": "DOWNDLGLIST2W",
+        "utf16le_hex": "44004f0057004e0044004c0047004c0049005300540032005700",
+        "location": {
+          "offset": 9963078,
+          "bytes": 28
+        }
+      },
+      "payload": {
+        "rva": 10745192,
+        "location": {
+          "offset": 10428264,
+          "bytes": 624
+        },
+        "sha256": "f4ddfd5f1211d52587ac50885658a006970b2e990fb8d022d5482f95f018fe7a"
+      }
+    },
+    {
+      "type": {
+        "kind": "id",
+        "id": 5
+      },
+      "name": {
+        "kind": "name",
+        "name": "LAZ_PIC_DIALOG_TEMPLATE",
+        "utf16le_hex": "4c0041005a005f005000490043005f004400490041004c004f0047005f00540045004d0050004c00410054004500",
+        "location": {
+          "offset": 9963106,
+          "bytes": 48
+        }
+      },
+      "payload": {
+        "rva": 10745816,
+        "location": {
+          "offset": 10428888,
+          "bytes": 50
+        },
+        "sha256": "84206051bdea064c59d10e8c709b06a3e83e07f4e73c683f569cc9a95055903c"
+      }
+    },
+    {
+      "type": {
+        "kind": "id",
+        "id": 5
+      },
+      "name": {
+        "kind": "name",
+        "name": "WAITBACKGNDDLG2",
+        "utf16le_hex": "57004100490054004200410043004b0047004e00440044004c0047003200",
+        "location": {
+          "offset": 9963154,
+          "bytes": 32
+        }
+      },
+      "payload": {
+        "rva": 10745868,
+        "location": {
+          "offset": 10428940,
+          "bytes": 306
+        },
+        "sha256": "6393b01f93203ba6b47afc3311e1a1054502d7cd0ca6830ebcd35c5049167de5"
+      }
+    },
+    {
+      "type": {
+        "kind": "id",
+        "id": 10
+      },
+      "name": {
+        "kind": "name",
+        "name": "TCALENDARPOPUPFORM",
+        "utf16le_hex": "5400430041004c0045004e0044004100520050004f0050005500500046004f0052004d00",
+        "location": {
+          "offset": 9963186,
+          "bytes": 38
+        }
+      },
+      "payload": {
+        "rva": 10820556,
+        "location": {
+          "offset": 10503628,
+          "bytes": 472
+        },
+        "sha256": "a2e35ffd8039d774f31d3988c43fbf366675ca63d1c8c74551f03c77a666b0d8"
+      }
+    },
+    {
+      "type": {
+        "kind": "id",
+        "id": 10
+      },
+      "name": {
+        "kind": "name",
+        "name": "TDUPESELFORM",
+        "utf16le_hex": "54004400550050004500530045004c0046004f0052004d00",
+        "location": {
+          "offset": 9963224,
+          "bytes": 26
+        }
+      },
+      "payload": {
+        "rva": 10821028,
+        "location": {
+          "offset": 10504100,
+          "bytes": 6341
+        },
+        "sha256": "f2b63bfe36c4c1314ba108b60b371534cb03b4208a9f11ea625149866bb169fa"
+      }
+    },
+    {
+      "type": {
+        "kind": "id",
+        "id": 10
+      },
+      "name": {
+        "kind": "name",
+        "name": "TFINDDIALOGFORM",
+        "utf16le_hex": "5400460049004e0044004400490041004c004f00470046004f0052004d00",
+        "location": {
+          "offset": 9963250,
+          "bytes": 32
+        }
+      },
+      "payload": {
+        "rva": 10827372,
+        "location": {
+          "offset": 10510444,
+          "bytes": 1649
+        },
+        "sha256": "f8176491f3632d47fc5c330f7a891aed7c301299c582684ba3a580ee75b113be"
+      }
+    },
+    {
+      "type": {
+        "kind": "id",
+        "id": 10
+      },
+      "name": {
+        "kind": "name",
+        "name": "THISTORYFORM",
+        "utf16le_hex": "540048004900530054004f005200590046004f0052004d00",
+        "location": {
+          "offset": 9963282,
+          "bytes": 26
+        }
+      },
+      "payload": {
+        "rva": 10829024,
+        "location": {
+          "offset": 10512096,
+          "bytes": 1265
+        },
+        "sha256": "e490920cb3a299958c38c6724f67dad2785156c17ee31cac928f782191ed230e"
+      }
+    },
+    {
+      "type": {
+        "kind": "id",
+        "id": 10
+      },
+      "name": {
+        "kind": "name",
+        "name": "TPLUGINSELFORM",
+        "utf16le_hex": "540050004c005500470049004e00530045004c0046004f0052004d00",
+        "location": {
+          "offset": 9963308,
+          "bytes": 30
+        }
+      },
+      "payload": {
+        "rva": 10830292,
+        "location": {
+          "offset": 10513364,
+          "bytes": 2692
+        },
+        "sha256": "298e3c60a59d2ce1d8df356230609baaddb3895ef57fea4f3004e6dc70f975dc"
+      }
+    },
+    {
+      "type": {
+        "kind": "id",
+        "id": 10
+      },
+      "name": {
+        "kind": "name",
+        "name": "TREPLACEDIALOGFORM",
+        "utf16le_hex": "54005200450050004c004100430045004400490041004c004f00470046004f0052004d00",
+        "location": {
+          "offset": 9963338,
+          "bytes": 38
+        }
+      },
+      "payload": {
+        "rva": 10832984,
+        "location": {
+          "offset": 10516056,
+          "bytes": 2057
+        },
+        "sha256": "93d34611811af924fa272e234cef64190bdffe648c9a60778e5b62625ff6f8ba"
+      }
+    }
+  ],
+  "limitations": [
+    "Static PE32/PE32+ type/name/language resource inventory; payloads other than RT_GROUP_ICON remain opaque.",
+    "Icon candidates are resource-table relationships. Language fallback, image decoding and actual shell/window loading are not observed.",
+    "Exact shared byte ranges are retained; non-identical overlapping resource structures or payloads are rejected."
+  ]
+}
