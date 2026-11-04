@@ -18,6 +18,10 @@ struct CommanderViewMode:Codable,Equatable {
     var foreground:ConfigurationColor?=nil
     var alternatingBackground:ConfigurationColor?=nil
     var tabColor:ConfigurationColor?=nil
+    var darkBackground:ConfigurationColor?=nil
+    var darkForeground:ConfigurationColor?=nil
+    var darkAlternatingBackground:ConfigurationColor?=nil
+    var darkTabColor:ConfigurationColor?=nil
     var tabIcon=""
     var autoRunCommands=""
 }
@@ -81,7 +85,7 @@ enum ViewModeSettings {
             if let id=mode.customColumnSetID,!id.isEmpty,!sets.contains(id){throw failure("View mode ‘\(mode.name)’ refers to a missing custom-column set.")}
             guard sorts.contains(mode.sortColumn) || customSorts.contains(mode.sortColumn),mode.secondarySortColumns.count<=8,mode.secondarySortColumns.allSatisfy({let key=$0.hasPrefix("-") ? String($0.dropFirst()):$0;return ["name","ext","size","date"].contains(key) || customSorts.contains(key)}) else{throw failure("Invalid sort columns in ‘\(mode.name)’.")}
             guard (mode.fileMask?.utf8.count ?? 0)<=4096,mode.autoRunCommands.utf8.count<=4096,mode.tabIcon.utf8.count<=128 else{throw failure("View mode text is too long.")}
-            for color in [mode.background,mode.foreground,mode.alternatingBackground,mode.tabColor].compactMap({$0}) {guard color==color.normalized else{throw failure("Mode colors must be finite values between zero and one.")}}
+            for color in [mode.background,mode.foreground,mode.alternatingBackground,mode.tabColor,mode.darkBackground,mode.darkForeground,mode.darkAlternatingBackground,mode.darkTabColor].compactMap({$0}) {guard color==color.normalized else{throw failure("Mode colors must be finite values between zero and one.")}}
             _=try commands(mode.autoRunCommands)
         }
         for rule in rules {

@@ -112,10 +112,18 @@ struct CommanderConfiguration:Codable,Equatable {
     var autoSwitchRules:[CommanderAutoSwitchRule] = []
     var autoSwitchEnabled:Bool = false
     var autoSwitchRestoreDefault:Bool = true
+    var tabsRememberViewSettings:Bool = true
+    var tabsRememberFileFilters:Bool = true
+    var appearanceMode:CommanderAppearanceMode = .light
+    var darkPalette:CommanderDarkPalette = .init()
     init() {}
-    enum CodingKeys:String,CodingKey {case customColumnSets,activeCustomColumnSetID,viewModes,autoSwitchRules,autoSwitchEnabled,autoSwitchRestoreDefault,tabsCloseOnDoubleClick,confirmCloseAllTabs,tabsShowLockAsterisk,customShortcuts,commandAliases,alternatingRowBackground,alternatingBackground,copyPreserveDirectoryDates,copyPreserveFileDates,copyPreservePermissions,copyVerifyAfterCopy,copyBufferSizeKB,copyDefaultCollision,confirmCopyMove,confirmOverwrite,deleteToTrash,confirmDelete,refreshOnActivate,autoRefreshEnabled,autoRefreshMetadata,autoRefreshOnlyForeground,autoRefreshExcludedPaths,autoRefreshUpdateHeader,dateSeparator,timeSeparator,use12HourTime,zipCompressionLevel,zipVerifyAfterPacking,archiveSetDateToNewest,browseArchivesAsDirectories,ftpPassiveMode,ftpConnectTimeout,ftpTransferTimeout,ftpOpenPanel,showButtonBar,showDriveList,showFolderTabs,showCurrentDirectory,showColumnHeaders,showStatusBar,showCommandLine,showFunctionButtons,verticalArrangement,showHidden,directoriesFirst,caseSensitiveSort,iconMode,iconSize,fileFontName,fileFontSize,fileFontBold,rowHeight,foreground,background,markedForeground,selectionBackground,selectionForeground,visibleColumns,columnWidths,extensionStyle,sizeFormat,useDecimalUnits,footerSizeFormat,ignoreListEnabled,ignorePatterns,quickSearchMode,quickSearchMatchBeginning,quickSearchMatchEnding,dateOrder,showSeconds,showCentury,tabsAlwaysVisible,tabTitleMaximum,newTabBesideCurrent,saveOnExit,singleClickOpen,selectionIncludesDirectories,historyLimit,externalEditorEnabled,externalEditorPath,externalViewerEnabled,externalViewerPath,thumbnailSize,viewerWordWrap,viewerFontName,viewerFontSize}
+    enum CodingKeys:String,CodingKey {case tabsRememberViewSettings,tabsRememberFileFilters,appearanceMode,darkPalette,customColumnSets,activeCustomColumnSetID,viewModes,autoSwitchRules,autoSwitchEnabled,autoSwitchRestoreDefault,tabsCloseOnDoubleClick,confirmCloseAllTabs,tabsShowLockAsterisk,customShortcuts,commandAliases,alternatingRowBackground,alternatingBackground,copyPreserveDirectoryDates,copyPreserveFileDates,copyPreservePermissions,copyVerifyAfterCopy,copyBufferSizeKB,copyDefaultCollision,confirmCopyMove,confirmOverwrite,deleteToTrash,confirmDelete,refreshOnActivate,autoRefreshEnabled,autoRefreshMetadata,autoRefreshOnlyForeground,autoRefreshExcludedPaths,autoRefreshUpdateHeader,dateSeparator,timeSeparator,use12HourTime,zipCompressionLevel,zipVerifyAfterPacking,archiveSetDateToNewest,browseArchivesAsDirectories,ftpPassiveMode,ftpConnectTimeout,ftpTransferTimeout,ftpOpenPanel,showButtonBar,showDriveList,showFolderTabs,showCurrentDirectory,showColumnHeaders,showStatusBar,showCommandLine,showFunctionButtons,verticalArrangement,showHidden,directoriesFirst,caseSensitiveSort,iconMode,iconSize,fileFontName,fileFontSize,fileFontBold,rowHeight,foreground,background,markedForeground,selectionBackground,selectionForeground,visibleColumns,columnWidths,extensionStyle,sizeFormat,useDecimalUnits,footerSizeFormat,ignoreListEnabled,ignorePatterns,quickSearchMode,quickSearchMatchBeginning,quickSearchMatchEnding,dateOrder,showSeconds,showCentury,tabsAlwaysVisible,tabTitleMaximum,newTabBesideCurrent,saveOnExit,singleClickOpen,selectionIncludesDirectories,historyLimit,externalEditorEnabled,externalEditorPath,externalViewerEnabled,externalViewerPath,thumbnailSize,viewerWordWrap,viewerFontName,viewerFontSize}
     init(from decoder:Decoder)throws {
         let values=try decoder.container(keyedBy:CodingKeys.self)
+        tabsRememberViewSettings=(try? values.decode(Bool.self,forKey:.tabsRememberViewSettings)) ?? true
+        tabsRememberFileFilters=(try? values.decode(Bool.self,forKey:.tabsRememberFileFilters)) ?? true
+        appearanceMode=(try? values.decode(CommanderAppearanceMode.self,forKey:.appearanceMode)) ?? .light
+        darkPalette=(try? values.decode(CommanderDarkPalette.self,forKey:.darkPalette)) ?? .init()
         customColumnSets=(try? values.decode([CustomColumnSet].self,forKey:.customColumnSets)) ?? []
         activeCustomColumnSetID=(try? values.decode(String.self,forKey:.activeCustomColumnSetID)) ?? ""
         viewModes=(try? values.decode([CommanderViewMode].self,forKey:.viewModes)) ?? []
@@ -213,6 +221,7 @@ struct CommanderConfiguration:Codable,Equatable {
     }
     func normalized()->CommanderConfiguration {
         var c=self
+        c.darkPalette=c.darkPalette.normalized
         c.alternatingBackground=c.alternatingBackground.normalized
         func number(_ x:Double,_ range:ClosedRange<Double>,_ fallback:Double)->Double{x.isFinite ? min(range.upperBound,max(range.lowerBound,x)) : fallback}
         c.viewerFontSize=number(c.viewerFontSize,9...36,12);if c.viewerFontName.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty{c.viewerFontName="Menlo"}

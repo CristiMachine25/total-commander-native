@@ -1,3 +1,11 @@
+# Native configuration version 4
+
+Adds per-tab view/filter preferences, appearance mode and a complete independent dark palette. Versions 1–3 retain their existing settings and receive the new defaults. Optional named-mode dark overrides are omitted when absent, preserving old profiles. Imports remain strict about invalid types, unknown keys, bounded values and broken references.
+
+Original INI display profiles now have a reported importer: [supported sections and limits](original-display-ini.md). Native JSON export is complete for the native schema; original INI export is not implemented.
+
+The focused compile additionally requires AppearanceSettings.swift and OriginalDisplayINI.swift alongside the version 3 dependencies below. Historical format/test descriptions follow.
+
 # Native configuration version 3
 
 Version 3 includes saved custom-column sets, named view modes and automatic switching rules. Version 1 and 2 exports migrate with empty display profiles and automatic switching disabled; all existing fields are retained. Import validates nested field types, bounded values, expressions, unique IDs and cross-references. Unsupported plugin expressions and unknown auto-run commands are rejected. These are native JSON definitions, not Windows INI profile import.
