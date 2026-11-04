@@ -11,6 +11,8 @@ ln -s "$PROJECT_ROOT/Resources" "$TEST_WORK/project/Resources"
 cd "$TEST_WORK/project"
 "${FTP_TEST_PYTHON:-python3}" -c 'import pyftpdlib, OpenSSL' || { printf '%s\n' 'FTP tests require pyftpdlib and pyOpenSSL; set FTP_TEST_PYTHON to that interpreter.' >&2; exit 1; }
 
+xcrun swiftc -whole-module-optimization -swift-version 5 -framework AppKit Sources/DriveBar.swift Tests/DriveBarTests.swift -o "$TEST_WORK/drives"
+"$TEST_WORK/drives"
 xcrun swiftc -whole-module-optimization -swift-version 5 -target arm64-apple-macosx13.0 Sources/FileService.swift Tests/FileServiceTests.swift -o "$TEST_WORK/files"
 "$TEST_WORK/files"
 xcrun swiftc -whole-module-optimization -swift-version 5 -target arm64-apple-macosx13.0 -framework AppKit Sources/Editor.swift Tests/EditorTests.swift -o "$TEST_WORK/editor"

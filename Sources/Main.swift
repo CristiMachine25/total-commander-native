@@ -59,6 +59,9 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
     private let thumbnailScroll=NSScrollView()
     let thumbnailGrid=ThumbnailGridView(frame:.zero)
     let directoryTree=DirectoryTreeView(frame:.zero)
+    let driveBar = DriveBarView()
+    private let driveMonitor = MountedDriveMonitor()
+    private var treeDriveLocation: PaneLocation?
     private var driveRowView:NSView?
     private var storedHeader:NSTableHeaderView?
     private let viewPreferenceKey:String
@@ -129,8 +132,9 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
         view.layer?.borderWidth = 1
         view.layer?.borderColor = cyan.cgColor
         heading.stringValue = title
-        locations = [FileManager.default.homeDirectoryForCurrentUser, URL(fileURLWithPath: "/")] + (FileManager.default.mountedVolumeURLs(includingResourceValuesForKeys: nil, options: [.skipHiddenVolumes]) ?? []).filter { $0.path != "/" }
-        for (index, location) in locations.enumerated() { volumePopup.addItem(withTitle: index == 0 ? "Home" : (location.path == "/" ? "/" : location.lastPathComponent)) }
+        driveBar.onSelect = { [weak self] url in self?.openDrive(url) }
+        driveMonitor.changed = { [weak self] drives in self?.refreshDrives(drives) }
+        refreshDrives(driveMonitor.drives)
         volumePopup.target = self; volumePopup.action = #selector(volumeSelected)
         volumePopup.font = mono
         path.font = mono
@@ -202,11 +206,11 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
         tabControl.closeOnDoubleClick = { [weak self] in self?.configuration.tabsCloseOnDoubleClick ?? false }
         updateTabs()
         let driveRow = NSStackView(views: [volumePopup, heading]);driveRowView=driveRow; driveRow.orientation = .horizontal; driveRow.spacing = 8
-        let stack = NSStackView(views: [driveRow, tabControl, path, fileContainer, footer])
+        let stack = NSStackView(views: [driveBar, driveRow, tabControl, path, fileContainer, footer])
         stack.orientation = .vertical; stack.alignment = .leading; stack.spacing = 3
         normalContent = stack
         view.addSubview(stack); stack.translatesAutoresizingMaskIntoConstraints = false
-        for v in [path, fileContainer, footer] {
+        for v in [driveBar, path, fileContainer, footer] {
             v.translatesAutoresizingMaskIntoConstraints = false
             v.widthAnchor.constraint(equalTo: stack.widthAnchor).isActive = true
         }
@@ -225,13 +229,14 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
         guard location.localDirectory != nil else{return false};setFileViewMode(.thumbnails);return true
     }
     func setTreeMode(root:PaneLocation) {
-        setFileViewMode(.tree);directoryTree.setRoot(root,showHidden:configuration.showHidden)
+        treeDriveLocation=root;setFileViewMode(.tree);directoryTree.setRoot(root,showHidden:configuration.showHidden);syncDriveSelection()
     }
     private func setFileViewMode(_ mode:PaneViewMode) {
         if viewMode == .tree,mode != .tree {directoryTree.cancel()}
         viewMode=mode;brief=mode == .brief
         fileScroll.isHidden=mode != .full;briefScroll.isHidden=mode != .brief;thumbnailScroll.isHidden=mode != .thumbnails;directoryTree.isHidden=mode != .tree
         if remembersViewMode {UserDefaults.standard.set(mode.rawValue,forKey:viewPreferenceKey)}
+        syncDriveSelection()
         path.isHidden=mode == .tree || !configuration.showCurrentDirectory;updateTabs()
         view.layoutSubtreeIfNeeded();briefGrid.updateGeometry();thumbnailGrid.updateGeometry()
         if mode == .brief {briefGrid.revealSelection()};if mode == .thumbnails {thumbnailGrid.revealSelection()}
@@ -257,6 +262,7 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
         let base=NSFont(name:configuration.fileFontName,size:configuration.fileFontSize) ?? NSFont.systemFont(ofSize:configuration.fileFontSize)
         cachedFont=configuration.fileFontBold ? NSFontManager.shared.convert(base,toHaveTrait:.boldFontMask):base
         footer.isHidden = !configuration.showStatusBar
+        driveBar.isHidden = !configuration.showDriveButtons
         driveRowView?.isHidden = !configuration.showDriveList;path.isHidden = viewMode == .tree || !configuration.showCurrentDirectory
         table.headerView=configuration.showColumnHeaders ? storedHeader:nil
         table.rowHeight=max(configuration.rowHeight,Double(configuration.iconSize+4));table.backgroundColor=renderingPalette.background.nsColor
@@ -313,7 +319,37 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
     func hideQuickView() {
         quickViewOverlay?.removeFromSuperview();quickViewOverlay=nil;normalContent?.isHidden=false
     }
-    @objc private func volumeSelected() { let index = volumePopup.indexOfSelectedItem; if locations.indices.contains(index) { onActivate?();if isTreeMode {setTreeMode(root:.local(locations[index]))}else{onLocal?(locations[index])} } }
+    private func openDrive(_ url: URL) {
+        onActivate?()
+        if isTreeMode { setTreeMode(root: .local(url)) } else { onLocal?(url) }
+    }
+    private func refreshDrives(_ drives: [MountedDrive]) {
+        locations = [FileManager.default.homeDirectoryForCurrentUser] + drives.map(\.url)
+        volumePopup.removeAllItems()
+        volumePopup.menu?.addItem(NSMenuItem(title: "Home", action: nil, keyEquivalent: ""))
+        for drive in drives { volumePopup.menu?.addItem(NSMenuItem(title: drive.name, action: nil, keyEquivalent: "")) }
+        driveBar.update(drives); syncDriveSelection()
+    }
+    private func syncDriveSelection() {
+        let current = isTreeMode ? (treeDriveLocation ?? location) : location
+        let url: URL?
+        switch current {
+        case .local(let local): url = local
+        case .archive(let session, _):
+            if let origin = session.displayOrigin {
+                url = origin.hasPrefix("/") ? URL(fileURLWithPath: String(origin.components(separatedBy: "!/")[0])) : nil
+            } else { url = session.original }
+        case .ftp: url = nil
+        }
+        driveBar.select(containing: url)
+        let selected = MountedDrive.containing(url, in: driveMonitor.drives)
+        if let selected, let index = locations.dropFirst().firstIndex(of: selected) { volumePopup.selectItem(at: index) }
+        else { volumePopup.select(nil) }
+    }
+    @objc private func volumeSelected() {
+        let index = volumePopup.indexOfSelectedItem
+        if locations.indices.contains(index) { openDrive(locations[index]); syncDriveSelection() }
+    }
     @objc private func tabClicked() { onTab?(tabControl.selectedSegment) }
     func updateTabs() {
         tabControl.isHidden = viewMode == .tree || !configuration.showFolderTabs || (!configuration.tabsAlwaysVisible && tabs.count < 2)
@@ -438,6 +474,7 @@ final class Pane: NSObject, NSTableViewDataSource, NSTableViewDelegate {
         briefGrid.resetSelectionAnchor();briefGrid.invalidateMeasurements();systemIcons.removeAllObjects()
         let old=currentEntry?.url, same=location.identity == next.identity
         location=next
+        syncDriveSelection()
         if let local=next.localDirectory { directory=local }
         listedEntries=listing;entries=displayEntries(listing);sortEntries()
         thumbnailGrid.invalidateListing()
