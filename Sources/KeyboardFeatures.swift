@@ -287,11 +287,7 @@ extension CommanderController {
         var paths=UserDefaults.standard.stringArray(forKey:"directoryHotlist") ?? []; paths.removeAll { $0 == activePane.directory.path }; UserDefaults.standard.set(paths,forKey:"directoryHotlist")
     }
     @objc func directoryHistory() {
-        let menu = NSMenu(title: "History")
-        for url in activePane.backHistory.reversed() {
-            let i = NSMenuItem(title: url.displayPath, action: #selector(shortcutHistorySelected(_:)), keyEquivalent: ""); i.target = self; i.representedObject = url; menu.addItem(i)
-        }
-        menu.popUp(positioning: nil, at: .zero, in: activePane.path)
+        makeDirectoryHistoryMenu().popUp(positioning:nil,at:.zero,in:activePane.path)
     }
     @objc func shortcutHistorySelected(_ item:NSMenuItem) { if let location=item.representedObject as? PaneLocation { navigate(location) } }
     @objc func commandHistory() {
@@ -303,6 +299,7 @@ extension CommanderController {
     }
     @objc func recallCommand(_ item: NSMenuItem) { commandField.stringValue = item.title; focusCommand() }
     func saveSession(force:Bool=false) {
+        saveDirectoryHistoryOnSessionExit(force:force)
         guard remember,(runtimeConfig.saveOnExit || force) else { return }
         saveNamedViewChoices()
         for (name,p) in [("left",left),("right",right)] {
@@ -326,6 +323,7 @@ extension CommanderController {
                 p.updateTabs()
             } else if let local=p.location.localDirectory { try? p.load(local,showHidden:showHidden) }
         }
+        restoreDirectoryHistory()
     }
     func handleExtendedKey(_ event: NSEvent, modifiers m: NSEvent.ModifierFlags) -> Bool {
         let key = event.keyCode, text = event.charactersIgnoringModifiers?.lowercased() ?? ""
